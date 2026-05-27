@@ -1,1567 +1,615 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ピッタリのお金をわたそう</title>
-  <style>
-        body {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 10px;
-            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
-            background: linear-gradient(135deg, #ffb3e6 0%, #87ceeb 50%, #98fb98 100%);
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden; /* 全体の縦スクロールを防止 */
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-        }
-        .container {
-            width: 100%;
-            max-width: 960px;
-            height: calc(100vh - 20px); /* 画面内に収める */
-            background: linear-gradient(135deg, #fff9c4 0%, #ffe4e1 100%);
-            border-radius: 20px;
-            padding: 15px;
-            box-shadow: 0 8px 32px rgba(255,105,180,0.3);
-            border: 4px solid #ff69b4;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-sizing: border-box;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 5px;
-            flex-shrink: 0; /* ヘッダーが潰れないように固定 */
-        }
-        .title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #ff1493;
-            margin-bottom: 5px;
-            text-shadow: 2px 2px 4px rgba(255,182,193,0.5);
-        }
-        .course-selector {
-            margin-bottom: 5px;
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .course-select {
-            font-size: 13px;
-            padding: 4px 12px;
-            border: 2px solid #ff69b4;
-            border-radius: 15px;
-            background: linear-gradient(135deg, #ffeef8 0%, #e6f3ff 100%);
-            color: #ff1493;
-            font-weight: bold;
-            cursor: pointer;
-            outline: none;
-        }
-        .progress-info {
-            font-size: 13px;
-            color: #ff1493;
-            background: linear-gradient(135deg, #ffe4e1 0%, #e6f3ff 100%);
-            padding: 4px 12px;
-            border-radius: 15px;
-            display: inline-block;
-            font-weight: bold;
-            border: 2px solid #ff69b4;
-        }
-        .instruction {
-            font-size: 14px;
-            color: #444;
-            margin-bottom: 3px;
-            font-weight: bold;
-            text-align: center;
-        }
-        .game-area {
-            display: grid;
-            /* 左（お金をおくトレイ）の横幅を広げ、右（お財布）を縮小してコインが横5枚並ぶスペースを確保 */
-            grid-template-columns: 1.25fr 1.35fr; 
-            gap: 15px;
-            flex-grow: 1;
-            min-height: 0; /* 子要素の高さ制御のために必要 */
-            margin-bottom: 5px;
-        }
-        .product-section {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            min-height: 0;
-        }
-        .product-card {
-            background: linear-gradient(135deg, #fff0f5 0%, #fffacd 100%);
-            border: 3px solid #ff69b4;
-            border-radius: 15px;
-            padding: 8px;
-            box-shadow: 0 4px 10px rgba(255,105,180,0.2);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .product-icon {
-            font-size: 50px;
-            margin-bottom: 2px;
-            filter: drop-shadow(0 3px 4px rgba(0,0,0,0.1));
-            line-height: 1;
-        }
-        .product-name {
-            font-size: 14px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 2px;
-        }
-        .product-price {
-            font-size: 18px;
-            font-weight: bold;
-            color: #ff1493;
-            background: linear-gradient(135deg, #ffe4e1 0%, #fff0f5 100%);
-            padding: 3px 12px;
-            border-radius: 15px;
-            display: inline-block;
-            border: 2px solid #ff69b4;
-            box-shadow: 0 2px 6px rgba(255,105,180,0.2);
-        }
-        
-        /* 支払いトレイ全体を位置の基準とするためのラッパー */
-        .payment-container {
-            position: relative;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-        }
-
-        /* 支払いエリア全体のレイアウト（枠線をスッキリさせ、スクロールを完全無効化） */
-        .payment-area {
-            width: 100%;
-            height: 100%;
-            border: 3px dashed #ff69b4;
-            border-radius: 15px;
-            background: linear-gradient(135deg, #fff0f5 0%, #f0f8ff 100%);
-            box-sizing: border-box;
-            box-shadow: inset 0 2px 6px rgba(255,105,180,0.15);
-            position: relative;
-            transition: background 0.2s, border-color 0.2s;
-            overflow: hidden; /* 縦スクロールを完全に防ぐ */
-            padding: 8px;
-        }
-        .payment-area.drag-over {
-            border-color: #32cd32;
-            background: linear-gradient(135deg, #f0fff0 0%, #e6ffe6 100%);
-        }
-        
-        /* やさしいコース用レイアウト (縦にきれいに2段並べる) */
-        .payment-area.layout-easy {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-evenly;
-            gap: 10px;
-        }
-        
-        /* ふつう・むずかしいコース用レイアウト (横2列 × 縦3段 of グリッドでスクロールを撲滅) */
-        .payment-area.layout-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr 1fr;
-            gap: 6px;
-        }
-
-        /* コイン専用の段（透明な整列領域、高さは親にフィット、余分なマージンをカット） */
-        .payment-lane {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.35); /* ほんのり白くしてコインを置く場所を分かりやすく */
-            border-radius: 10px;
-            padding: 2px 8px;
-            box-sizing: border-box;
-            height: 100%;
-            min-height: 0;
-            position: relative;
-            z-index: 1; /* 各レーンの重なり順の基準 */
-        }
-        
-        /* 置かれたコインが綺麗に【左上から右へ並び、多くなったら2段目に回り込む】フレックス配置 */
-        .lane-coins-container {
-            display: flex;
-            flex-flow: row wrap; /* 横並び、端に到達したら折り返し */
-            gap: 4px;
-            align-items: flex-start;   /* 縦方向は最初から常に上寄せ */
-            align-content: flex-start; /* 複数行になっても上寄せをキープしてブレを撲滅 */
-            justify-content: flex-start; /* 左寄せ */
-            height: 100%;
-            flex-grow: 1;
-            min-width: 0;
-            padding-top: 3px; /* 上部に少しだけ余白を持たせて配置を美しく */
-            box-sizing: border-box;
-        }
-
-        .total-display {
-            text-align: center;
-            flex-shrink: 0;
-        }
-        .total-amount {
-            font-size: 18px;
-            font-weight: bold;
-            color: #4169e1;
-            background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 100%);
-            padding: 6px 16px;
-            border-radius: 20px;
-            display: inline-block;
-            border: 2px solid #87ceeb;
-            box-shadow: 0 2px 6px rgba(135,206,235,0.25);
-        }
-        .coins-section {
-            background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 100%);
-            border: 3px solid #87ceeb;
-            border-radius: 15px;
-            padding: 10px;
-            box-shadow: 0 4px 10px rgba(135,206,235,0.2);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 0;
-        }
-        .coins-title {
-            font-size: 13px;
-            font-weight: bold;
-            color: #4169e1;
-            text-align: center;
-            margin-bottom: 6px;
-            text-shadow: 1px 1px 2px rgba(135,206,235,0.4);
-            flex-shrink: 0;
-        }
-        .coin-bank {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            flex-grow: 1;
-            justify-content: space-evenly;
-            min-height: 0;
-            overflow: hidden; /* コイン銀行内の不意なはみ出しを防ぐ */
-        }
-        .coin-row {
-            display: flex;
-            gap: 6px;
-            justify-content: space-evenly;
-            align-items: stretch;
-            width: 100%;
-            flex: 1; /* 2本の行が縦幅を等しく分け合う */
-            min-height: 0;
-            overflow: hidden;
-        }
-        .coin-type-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            flex: 1;
-            min-width: 0;
-            height: 100%;
-        }
-        .coin-holder {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.45);
-            border-radius: 10px;
-            padding: 4px;
-            width: 100%;
-            height: 100%;
-            min-height: 0;
-            box-shadow: inset 0 1px 4px rgba(0,0,0,0.08);
-            box-sizing: border-box;
-        }
-        .coin-label {
-            font-size: 11px;
-            font-weight: bold;
-            color: #4169e1;
-            margin-bottom: 2px;
-            flex-shrink: 0;
-        }
-        .coin-stack {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            padding-bottom: 5px;
-            box-sizing: border-box;
-        }
-        /* スクロールバーの非表示 */
-        .coin-stack::-webkit-scrollbar, .payment-area::-webkit-scrollbar {
-            width: 4px;
-        }
-        .coin-stack::-webkit-scrollbar-thumb, .payment-area::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.15);
-            border-radius: 2px;
-        }
-        .coin {
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            cursor: grab;
-            user-select: none;
-            transition: transform 0.15s, box-shadow 0.15s;
-            border: 3px solid;
-            touch-action: none;
-            box-shadow: 0 3px 5px rgba(0,0,0,0.18);
-            position: relative;
-            flex-shrink: 0;
-        }
-        .coin:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        .coin:active {
-            cursor: grabbing;
-            transform: scale(0.95);
-        }
-        /* コインサイズ調整（1画面に綺麗に収まる大きさ） */
-        /* 500円玉：新500円玉（バイカラー・クラッド貨幣）の境界をくっきりさせてリアルに再現 */
-        .coin-500 {
-            width: 54px;
-            height: 54px;
-            background: radial-gradient(
-                circle, 
-                #f8f8f8 0%, 
-                #cccccc 68%, /* 銀色部分を広くする */
-                #c19a3b 69%, /* 外側の縁だけを金色にする */
-                #eadd9f 85%, 
-                #b38b22 100%
-            );
-            border: 3px solid #917518;
-            color: #222;
-            font-size: 15px;
-            text-shadow: 1px 1px 0px rgba(255,255,255,0.8);
-        }
-        .coin-100 {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #fafafa 0%, #dcdcdc 50%, #b0b0b0 100%);
-            border: 3px solid #888888;
-            color: #444;
-            font-size: 15px;
-            text-shadow: 1px 1px 0px rgba(255,255,255,0.6);
-        }
-        
-        /* 50円玉：数字「50」を中央の穴を避けて、コインの最上部に美しく並べます */
-        .coin-50 {
-            width: 44px;
-            height: 44px;
-            background: radial-gradient(
-                circle, 
-                transparent 15%, 
-                #888888 16%, 
-                #fafafa 20%, 
-                #dcdcdc 60%, 
-                #b0b0b0 100%
-            );
-            border: 3px solid #888888;
-            color: #444;
-            text-shadow: 1px 1px 0px rgba(255,255,255,0.6);
-            border-radius: 50%;
-            
-            /* 文字の位置を穴のさらに上に引き上げるため padding-top を極小の1pxに調整 */
-            align-items: flex-start !important;
-            padding-top: 1px !important;
-            font-size: 10px !important;
-        }
-        .coin-10 {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, #e5a65d 0%, #b87333 50%, #8b4513 100%);
-            border: 3px solid #703d0b;
-            color: #fff;
-            font-size: 15px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
-        }
-        /* 5円玉：数字「5」を中央の穴を避けて、コインの最上部に美しく並べます */
-        .coin-5 {
-            width: 44px;
-            height: 44px;
-            background: radial-gradient(
-                circle, 
-                transparent 15%, 
-                #8c6d0d 16%, 
-                #fae07a 21%, 
-                #d4af37 60%, 
-                #b59015 100%
-            );
-            border: 3px solid #8c6d0d;
-            color: #654321;
-            text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
-            border-radius: 50%;
-            
-            /* 文字の位置を穴のさらに上に引き上げるため padding-top を極小の1pxに調整 */
-            align-items: flex-start !important;
-            padding-top: 1px !important;
-            font-size: 11px !important;
-        }
-        .coin-1 {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 50%, #c0c0c0 100%);
-            border: 3px solid #a0a0a0;
-            color: #555;
-            font-size: 13px;
-            text-shadow: 1px 1px 0px rgba(255,255,255,0.6);
-        }
-        
-        /* 置かれたコインの特別スタイル (コインの大きさは元のクラスのまま100%維持) */
-        /* z-index と relative を使って、はみ出しても他の段の背景の下に隠れない（色が薄くならない）ように設定 */
-        .coin-placed {
-            margin: 2px !important;
-            cursor: pointer;
-            position: relative !important;
-            z-index: 100 !important; /* 確実に最前面に出るように数値を引き上げ */
-            display: inline-flex !important;
-            transform: none !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
-        }
-        
-        .coin-controls {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 2px solid rgba(135,206,235,0.25);
-            flex-shrink: 0; /*絶対に潰れない・はみ出さないように保護 */
-        }
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            outline: none;
-        }
-        .btn-check {
-            background: linear-gradient(135deg, #32cd32 0%, #98fb98 100%);
-            color: white;
-            border: 2px solid #228b22;
-            box-shadow: 0 3px 8px rgba(50,205,50,0.25);
-        }
-        .btn-check:hover {
-            background: linear-gradient(135deg, #228b22 0%, #90ee90 100%);
-            transform: translateY(-1px);
-        }
-        .btn-reset {
-            background: linear-gradient(135deg, #ff69b4 0%, #ffb6c1 100%);
-            color: white;
-            border: 2px solid #ff1493;
-            box-shadow: 0 3px 8px rgba(255,105,180,0.25);
-        }
-        .btn-reset:hover {
-            background: linear-gradient(135deg, #ff1493 0%, #ffc0cb 100%);
-            transform: translateY(-1px);
-        }
-        .btn-next {
-            background: linear-gradient(135deg, #00bfff 0%, #add8e6 100%);
-            color: white;
-            border: 2px solid #0000ff;
-            box-shadow: 0 3px 8px rgba(30,144,255,0.25);
-            display: none; /* JavaScriptの変更に伴い、これは非表示のままにします */
-        }
-        .btn-next:hover {
-            background: linear-gradient(135deg, #0000ff 0%, #87ceeb 100%);
-            transform: translateY(-1px);
-        }
-
-        /* 次のもんだいへボタンのゆっくり優しく目立つパルス点滅アニメーション（みどり色） */
-        @keyframes pulse-blink-green {
-            0%, 100% {
-                transform: scale(1);
-                box-shadow: 0 4px 12px rgba(50, 205, 50, 0.35);
-            }
-            50% {
-                transform: scale(1.06);
-                box-shadow: 0 8px 20px rgba(50, 205, 50, 0.75);
-                background: linear-gradient(135deg, #32cd32 0%, #228b22 100%);
-            }
-        }
-        .message.success .btn-understand.btn-blink {
-            animation: pulse-blink-green 1.2s infinite ease-in-out;
-        }
-
-        .message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-            text-align: center;
-            padding: 22px 30px;
-            border-radius: 15px;
-            display: none;
-            max-width: 80%;
-            box-sizing: border-box;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            animation: popupFadeIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-        }
-        .message-text-area {
-            font-size: 18px;
-            font-weight: bold;
-            white-space: pre-line; /* 改行を有効にする */
-            line-height: 1.5;
-        }
-        
-        /* 閉じるための可愛い「わかった」ボタン */
-        .btn-understand {
-            background: linear-gradient(135deg, #ff69b4 0%, #ffb6c1 100%);
-            color: white;
-            border: 2px solid #ff1493;
-            box-shadow: 0 3px 8px rgba(255,105,180,0.25);
-            margin-top: 5px;
-            padding: 8px 24px;
-            border-radius: 18px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            outline: none;
-        }
-        .btn-understand:hover {
-            background: linear-gradient(135deg, #ff1493 0%, #ffc0cb 100%);
-            transform: translateY(-1px);
-        }
-
-        .message.success {
-            background: linear-gradient(135deg, #f0fff0 0%, #e6ffe6 100%);
-            color: #228b22;
-            border: 3px solid #32cd32;
-        }
-        /* 正解のときはボタンもみどり系に変える */
-        .message.success .btn-understand {
-            background: linear-gradient(135deg, #32cd32 0%, #98fb98 100%);
-            border: 2px solid #228b22;
-            box-shadow: 0 3px 8px rgba(50, 205, 50, 0.25);
-        }
-        .message.success .btn-understand:hover {
-            background: linear-gradient(135deg, #228b22 0%, #90ee90 100%);
-        }
-
-        .message.error {
-            background: linear-gradient(135deg, #fff0f5 0%, #ffe4e1 100%);
-            color: #ff1493;
-            border: 3px solid #ff69b4;
-        }
-        
-        .popup-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 999;
-            display: none;
-        }
-        @keyframes popupFadeIn {
-            from {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(0.85);
-            }
-            to {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-            }
-        }
-        .dragging {
-            opacity: 0.4;
-            transform: scale(0.9);
-        }
-        .creator-credit {
-            position: fixed;
-            bottom: 5px;
-            right: 10px;
-            z-index: 1001;
-        }
-        .credit-text {
-            font-size: 10px;
-            color: rgba(0,0,0,0.5);
-            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
-        }
-        
-        .touch-ghost {
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999;
-            opacity: 0.85;
-            transform: translate(-50%, -50%);
-            transition: none;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 5px;
-            }
-            .container {
-                height: calc(100vh - 10px);
-                padding: 10px;
-                border-width: 3px;
-                border-radius: 15px;
-            }
-            .title {
-                font-size: 18px;
-                margin-bottom: 2px;
-            }
-            .course-select, .progress-info {
-                font-size: 11px;
-                padding: 3px 8px;
-            }
-            .instruction {
-                font-size: 11px;
-                margin-bottom: 3px;
-            }
-            .game-area {
-                grid-template-columns: 1fr;
-                /* スマホ時の縦分割を 42:58 に固定し、画面の縦崩れを物理的に防ぐ */
-                grid-template-rows: 42fr 58fr; 
-                gap: 6px;
-                min-height: 0;
-                height: 100%;
-            }
-            .product-section {
-                gap: 4px;
-                height: 100%;
-            }
-            .product-card {
-                flex-direction: row;
-                justify-content: space-evenly;
-                align-items: center;
-                padding: 4px;
-            }
-            .product-icon {
-                font-size: 32px;
-            }
-            .product-name {
-                font-size: 12px;
-            }
-            .product-price {
-                font-size: 14px;
-                padding: 2px 8px;
-            }
-            .payment-area {
-                min-height: 50px;
-                padding: 4px;
-                gap: 4px;
-            }
-            .payment-lane {
-                min-height: 38px;
-                padding: 1px 2px;
-            }
-            .total-amount {
-                font-size: 14px;
-                padding: 3px 10px;
-            }
-            .coins-section {
-                padding: 6px;
-                height: 100%;
-            }
-            .coins-title {
-                font-size: 11px;
-                margin-bottom: 4px;
-            }
-            .coin-holder {
-                padding: 2px;
-            }
-            .coin-label {
-                font-size: 9px;
-            }
-            .coin-500 { width: 36px; height: 36px; font-size: 10px; border-width: 2px;}
-            .coin-100 { width: 32px; height: 32px; font-size: 10px; border-width: 2px;}
-            
-            /* 50円・5円スマホ表示用の余白調整 */
-            .coin-50 {
-                padding-top: 1px !important;
-                font-size: 8px !important;
-            }
-            .coin-5 {
-                padding-top: 1px !important;
-                font-size: 9px !important;
-            }
-            
-            .coin-10 { width: 34px; height: 34px; font-size: 10px; border-width: 2px;}
-            .coin-1 { width: 26px; height: 26px; font-size: 8px; border-width: 2px;}
-            
-            /* スマホ時の置かれたコインサイズもスマホお財布サイズをそのまま維持 */
-            .coin-placed {
-                margin: 2px !important;
-            }
-
-            .coin-controls {
-                margin-top: 4px;
-                padding-top: 4px;
-                gap: 6px;
-            }
-            .btn {
-                padding: 5px 10px;
-                font-size: 11px;
-            }
-        }
-  </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
- </head>
- <body>
-  <main class="container">
-   <header class="header">
-    <h1 class="title" id="app-title">ピッタリのお金をわたそう</h1>
-    <div class="course-selector">
-     <select class="course-select" id="course-select">
-      <option value="easy">やさしい (100円・10円のみ)</option>
-      <option value="normal">ふつう (500円まで・1円単位)</option>
-      <option value="hard">むずかしい (1000円まで・1円単位)</option>
-     </select>
-     <select class="course-select" id="hint-select">
-      <option value="hint-on">ヒントあり（ごうけいがでます）</option>
-      <option value="hint-off">ヒントなし</option>
-     </select>
-     <div class="progress-info" id="progress-info">
-      問題 1/5 (正解数: 0)
-     </div>
-    </div>
-    <p class="instruction" id="instruction-text">しょうひんと同じきんがくになるように、お金をいどうしてください</p>
-   </header>
-   
-   <div class="game-area">
-    <!-- 左側：商品情報 ＆ お金をおくエリア -->
-    <div class="product-section">
-     <div class="product-card">
-      <div class="product-icon" id="product-icon">🍎</div>
-      <div>
-        <div class="product-name" id="product-name">りんご</div>
-        <div class="product-price" id="product-price">120円</div>
-      </div>
-     </div>
-     
-     <!-- トレイとメッセージが同一の基準になるよう payment-container で包みます -->
-     <div class="payment-container">
-         <!-- 支払いトレイ：内部に見えない透明な段（レーン）が自動的に作成されます -->
-         <div class="payment-area" id="payment-area">
-           <!-- コースごとに動的にレーンを生成します -->
-         </div>
-         
-         <!-- プレースホルダー（トレイの完全真ん中に美しくかぶせるメッセージ） -->
-         <p id="payment-placeholder" style="color: #888; font-size: 12px; text-align: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; width: 90%; line-height: 1.4; z-index: 10; display: none;">
-           ここにお金をいどうしてね！<br>(タップするだけでもいどうできるよ)
-         </p>
-     </div>
-     
-     <div class="total-display">
-      <div class="total-amount" id="total-amount">合計: 0円</div>
-     </div>
-    </div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>おつりをピッタリわたそう</title>
     
-    <!-- 右側：お財布（硬貨置き場） -->
-    <div class="coins-section">
-     <div class="coins-title">おさいふ（タップかドラッグでいどう）</div>
-     <div class="coin-bank" id="coin-bank">
-       <!-- 硬貨はここに動的に生成されます -->
-     </div>
-     
-     <div class="coin-controls">
-      <button class="btn btn-check" id="check-btn">答えをかくにん</button>
-      <button class="btn btn-reset" id="reset-btn">やりなおし</button>
-      <button class="btn btn-next" id="next-btn" style="display: none !important;">次のもんだい</button>
-     </div>
-    </div>
-   </div>
-   
-   <!-- メッセージエリアの中に「メッセージ本文エリア」と「わかったボタン」を実装します -->
-   <div class="message" id="message">
-       <div class="message-text-area" id="message-text"></div>
-       <button class="btn-understand" id="understand-btn">わかった</button>
-   </div>
-  </main>
-  
-  <div class="popup-overlay" id="popup-overlay"></div>
-  
-  <footer class="creator-credit">
-    <span class="credit-text">©2026　ピッタリのお金をわたそう　ＩＣＴ支援の杜</span>
-  </footer>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 紙吹雪エフェクト用ライブラリ -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-  <script>
-        // 設定
-        const config = {
-            success_messages: [
-                "正解です！よくできました！🌟",
-                "大せいかい！かんぺきです！おみごと！👏",
-                "ぴったり！すごい！天才だね！🎉",
-                "おめでとう！あっていたよ！🌈"
-            ],
-            try_again_message: "ざんねん！もう一度チャレンジしてみよう！💪"
-        };
+    <style>
+        body {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden; 
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background: linear-gradient(135deg, #FFE5F1 0%, #E5F3FF 100%);
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
+    <div id="root"></div>
 
-        // 商品データ（コース別）- 各コース20個、値段はランダム
-        const productTemplates = {
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        // --- Web Audio API を用いたサウンド生成エンジン ---
+        const AudioEngine = (() => {
+            let audioCtx = null;
+
+            const init = () => {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            };
+
+            const playTone = (frequency, type, duration, vol = 0.1, startTime = 0) => {
+                init();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.type = type;
+                oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime + startTime);
+                
+                gainNode.gain.setValueAtTime(vol, audioCtx.currentTime + startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + duration);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start(audioCtx.currentTime + startTime);
+                oscillator.stop(audioCtx.currentTime + startTime + duration);
+            };
+
+            return {
+                playCoin: () => {
+                    playTone(800, 'sine', 0.05, 0.2);
+                    playTone(1200, 'sine', 0.05, 0.1, 0.02);
+                },
+                playCorrect: () => {
+                    playTone(880, 'sine', 0.2, 0.2);
+                    playTone(1108.73, 'sine', 0.4, 0.2, 0.15);
+                },
+                playError: () => {
+                    playTone(150, 'sawtooth', 0.3, 0.1);
+                    playTone(140, 'sawtooth', 0.3, 0.1, 0.1);
+                },
+                playFanfare: () => {
+                    const notes = [523.25, 659.25, 783.99];
+                    notes.forEach((freq, i) => {
+                        playTone(freq, 'square', 0.2, 0.08, i * 0.15);
+                    });
+                    setTimeout(() => {
+                        playTone(1046.50, 'square', 0.8, 0.1);
+                        playTone(1318.51, 'square', 0.8, 0.1);
+                        playTone(1567.98, 'square', 0.8, 0.1);
+                    }, 450);
+                }
+            };
+        })();
+
+        const Icon = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
+        const HelpCircle = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></Icon>;
+        const CheckCircle = (props) => <Icon {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
+        const XCircle = (props) => <Icon {...props}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></Icon>;
+        const RotateCcw = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></Icon>;
+        const ArrowRight = (props) => <Icon {...props}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></Icon>;
+        const Lightbulb = (props) => <Icon {...props}><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.2 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></Icon>;
+
+        // --- データ定義 ---
+        const PRODUCTS = {
             easy: [
-                { icon: "🍎", name: "りんご", minPrice: 30, maxPrice: 150 },
-                { icon: "🍌", name: "バナナ", minPrice: 50, maxPrice: 120 },
-                { icon: "🥕", name: "にんじん", minPrice: 40, maxPrice: 100 },
-                { icon: "🍊", name: "みかん", minPrice: 30, maxPrice: 90 },
-                { icon: "🍅", name: "トマト", minPrice: 60, maxPrice: 140 },
-                { icon: "🍪", name: "クッキー", minPrice: 70, maxPrice: 150 },
-                { icon: "🍭", name: "キャンディー", minPrice: 20, maxPrice: 80 },
-                { icon: "🍫", name: "チョコレート", minPrice: 80, maxPrice: 180 },
-                { icon: "🍩", name: "ドーナツ", minPrice: 90, maxPrice: 190 },
-                { icon: "🧁", name: "カップケーキ", minPrice: 110, maxPrice: 200 },
-                { icon: "✏️", name: "えんぴつ", minPrice: 40, maxPrice: 90 },
-                { icon: "📝", name: "ノート", minPrice: 80, maxPrice: 150 },
-                { icon: "✂️", name: "はさみ", minPrice: 120, maxPrice: 200 },
-                { icon: "📏", name: "じょうぎ", minPrice: 70, maxPrice: 130 },
-                { icon: "🖍️", name: "クレヨン", minPrice: 100, maxPrice: 180 },
-                { icon: "🧦", name: "くつした", minPrice: 110, maxPrice: 190 },
-                { icon: "🎀", name: "リボン", minPrice: 50, maxPrice: 120 },
-                { icon: "🧢", name: "ぼうし", minPrice: 150, maxPrice: 200 },
-                { icon: "🧤", name: "てぶくろ", minPrice: 120, maxPrice: 180 },
-                { icon: "🎈", name: "ふうせん", minPrice: 30, maxPrice: 90 }
+                { icon: '🍎', name: 'りんご', basePrice: 72 },
+                { icon: '🍌', name: 'バナナ', basePrice: 63 },
+                { icon: '🍅', name: 'トマト', basePrice: 76 },
+                { icon: '🥕', name: 'にんじん', basePrice: 67 },
+                { icon: '✏️', name: 'えんぴつ', basePrice: 54 },
+                { icon: '🧽', name: 'けしごむ', basePrice: 61 },
+                { icon: '🍬', name: 'あめ', basePrice: 23 },
+                { icon: '🍫', name: 'チョコ', basePrice: 87 },
+                { icon: '🍊', name: 'みかん', basePrice: 42 },
+                { icon: '🍮', name: 'プリン', basePrice: 84 },
+                { icon: '🥒', name: 'きゅうり', basePrice: 56 },
+                { icon: '🧅', name: 'たまねぎ', basePrice: 48 },
+                { icon: '🍩', name: 'ドーナツ', basePrice: 91 },
+                { icon: '🍪', name: 'クッキー', basePrice: 34 }
             ],
             normal: [
-                { icon: "🥬", name: "キャベツ", minPrice: 102, maxPrice: 298 },
-                { icon: "🥛", name: "牛乳", minPrice: 112, maxPrice: 248 },
-                { icon: "🍞", name: "食パン", minPrice: 105, maxPrice: 198 },
-                { icon: "🥚", name: "たまご", minPrice: 156, maxPrice: 298 },
-                { icon: "🧀", name: "チーズ", minPrice: 204, maxPrice: 398 },
-                { icon: "🍰", name: "ショートケーキ", minPrice: 305, maxPrice: 485 },
-                { icon: "🍦", name: "ソフトクリーム", minPrice: 155, maxPrice: 285 },
-                { icon: "🥧", name: "アップルパイ", minPrice: 255, maxPrice: 395 },
-                { icon: "🍮", name: "プリン", minPrice: 102, maxPrice: 198 },
-                { icon: "🧃", name: "ジュース", minPrice: 82, maxPrice: 168 },
-                { icon: "📚", name: "えほん", minPrice: 302, maxPrice: 498 },
-                { icon: "🎨", name: "えのぐ", minPrice: 255, maxPrice: 448 },
-                { icon: "📐", name: "さんかくじょうぎ", minPrice: 125, maxPrice: 278 },
-                { icon: "🖊️", name: "ボールペン", minPrice: 82, maxPrice: 228 },
-                { icon: "📒", name: "れんらくちょう", minPrice: 122, maxPrice: 318 },
-                { icon: "🧴", name: "ハンドソープ", minPrice: 205, maxPrice: 398 },
-                { icon: "🧽", name: "スポンジ", minPrice: 82, maxPrice: 178 },
-                { icon: "🕯️", name: "アロマキャンドル", minPrice: 155, maxPrice: 288 },
-                { icon: "🎁", name: "プレゼントバッグ", minPrice: 305, maxPrice: 498 },
-                { icon: "🌸", name: "おはな", minPrice: 155, maxPrice: 398 }
+                { icon: '🍞', name: 'パン', basePrice: 158 },
+                { icon: '🥛', name: 'ぎゅうにゅう', basePrice: 128 },
+                { icon: '🥚', name: 'たまご', basePrice: 248 },
+                { icon: '🐟', name: 'さかな', basePrice: 188 },
+                { icon: '🍦', name: 'アイス', basePrice: 145 },
+                { icon: '🍰', name: 'ケーキ', basePrice: 367 }, 
+                { icon: '🥤', name: 'ジュース', basePrice: 134 }, 
+                { icon: '📓', name: 'ノート', basePrice: 173 }, 
+                { icon: '🖍️', name: 'クレヨン', basePrice: 236 }, 
+                { icon: '🧀', name: 'チーズ', basePrice: 281 }, 
+                { icon: '🍗', name: 'おにく', basePrice: 317 }, 
+                { icon: '🍟', name: 'ポテト', basePrice: 194 }, 
+                { icon: '🍔', name: 'バーガー', basePrice: 263 }, 
+                { icon: '🌭', name: 'ホットドッグ', basePrice: 219 } 
             ],
             hard: [
-                { icon: "🍜", name: "ラーメン", minPrice: 502, maxPrice: 898 },
-                { icon: "🍱", name: "おべんとう", minPrice: 455, maxPrice: 798 },
-                { icon: "🍕", name: "ピザ", minPrice: 655, maxPrice: 998 },
-                { icon: "🍔", name: "ハンバーガーセット", minPrice: 405, maxPrice: 798 },
-                { icon: "🍣", name: "にぎりずし", minPrice: 705, maxPrice: 998 },
-                { icon: "🎂", name: "デコレーションケーキ", minPrice: 755, maxPrice: 998 },
-                { icon: "🍬", name: "おかしつめあわせ", minPrice: 355, maxPrice: 798 },
-                { icon: "🧊", name: "かき氷", minPrice: 325, maxPrice: 698 },
-                { icon: "🥮", name: "わがしセット", minPrice: 455, maxPrice: 798 },
-                { icon: "🍯", name: "はちみつボトル", minPrice: 505, maxPrice: 898 },
-                { icon: "🧸", name: "くまのぬいぐるみ", minPrice: 455, maxPrice: 898 },
-                { icon: "🎮", name: "レトロゲーム機", minPrice: 705, maxPrice: 998 },
-                { icon: "🪀", name: "木のおもちゃ", minPrice: 355, maxPrice: 698 },
-                { icon: "🎲", name: "ボードゲーム", minPrice: 555, maxPrice: 898 },
-                { icon: "🎸", name: "おもちゃのウクレレ", minPrice: 755, maxPrice: 998 },
-                { icon: "📓", name: "じゆうちょう5冊組", minPrice: 405, maxPrice: 798 },
-                { icon: "✏️", name: "えんぴつけずり機", minPrice: 505, maxPrice: 898 },
-                { icon: "📐", name: "ぶんぼうぐデラックス", minPrice: 655, maxPrice: 998 },
-                { icon: "🖍️", name: "いろえんぴつ24色", minPrice: 505, maxPrice: 898 },
-                { icon: "🎨", name: "本格絵のぐセット", minPrice: 655, maxPrice: 998 }
+                { icon: '🍱', name: 'おべんとう', basePrice: 634 },
+                { icon: '🥩', name: 'ステーキ', basePrice: 783 },
+                { icon: '🍣', name: 'おすし', basePrice: 546 },
+                { icon: '📚', name: 'ほん', basePrice: 619 },
+                { icon: '🧩', name: 'パズル', basePrice: 348 }, 
+                { icon: '🧸', name: 'ぬいぐるみ', basePrice: 648 },
+                { icon: '🎨', name: 'えのぐ', basePrice: 412 }, 
+                { icon: '🍈', name: 'メロン', basePrice: 716 },
+                { icon: '🦞', name: 'えび', basePrice: 692 },
+                { icon: '🍕', name: 'ピザ', basePrice: 476 }, 
+                { icon: '🍜', name: 'ラーメン', basePrice: 384 }, 
+                { icon: '🪁', name: 'たこ', basePrice: 671 },
+                { icon: '📕', name: 'ずかん', basePrice: 764 },
+                { icon: '👕', name: 'Ｔシャツ', basePrice: 687 }
             ]
         };
 
-        // コースと状態
-        let currentCourse = 'easy';
-        let currentQuestionIndex = 0;
-        let correctAnswers = 0;
-        let selectedQuestions = [];
-        let currentProduct = null;
-        let hintMode = true;
-        let totalPlacedAmount = 0;
+        const COINS = [500, 100, 50, 10, 5, 1];
 
-        // 音声効果音（シンセサイザー）
-        let audioCtx = null;
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const calculateOptimalCoinCount = (amount) => {
+            let remaining = amount;
+            let count = 0;
+            for (const coin of COINS) {
+                if (remaining >= coin) {
+                    count += Math.floor(remaining / coin);
+                    remaining %= coin;
+                }
             }
-        }
+            return count;
+        };
 
-        function playSound(type) {
-            initAudio();
-            if (!audioCtx) return;
+        const Coin = ({ value, scaleMultiplier = 2.0 }) => {
+            const realDiameter = {
+                500: 26.5,
+                100: 22.6,
+                50: 21.0,
+                10: 23.5,
+                5: 22.0,
+                1: 20.0
+            }[value];
+
+            const size = realDiameter * scaleMultiplier;
+            let background = '';
+            let border = '';
+            let color = '';
+            let fontSize = size * 0.35; 
+            let isHoled = value === 50 || value === 5;
             
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
+            if (value === 500) {
+                background = 'linear-gradient(135deg, #e6d8a7 0%, #c4b57e 50%, #e6d8a7 100%)';
+                border = '2px solid #a3955b';
+                color = '#5a512b';
+            } else if (value === 100) {
+                background = 'linear-gradient(135deg, #fdfdfd 0%, #c0c0c0 50%, #fdfdfd 100%)';
+                border = '2px solid #999';
+                color = '#444';
+            } else if (value === 50) {
+                background = 'radial-gradient(circle, transparent 18%, #888 19%, #fdfdfd 24%, #c0c0c0 100%)';
+                border = '2px solid #999';
+                color = '#444';
+            } else if (value === 10) {
+                background = 'linear-gradient(135deg, #e09f6e 0%, #b86b35 50%, #e09f6e 100%)';
+                border = '2px solid #8b4513';
+                color = '#4a2305';
+            } else if (value === 5) {
+                background = 'radial-gradient(circle, transparent 20%, #997000 21%, #ffd700 25%, #daa520 100%)';
+                border = '2px solid #b8860b';
+                color = '#523a00';
+            } else if (value === 1) {
+                background = 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #ffffff 100%)';
+                border = '2px solid #cbd5e1';
+                color = '#64748b';
             }
 
-            const now = audioCtx.currentTime;
+            return (
+                <div 
+                    className="rounded-full flex items-center justify-center font-bold flex-shrink-0 relative overflow-hidden"
+                    style={{
+                        width: `${size}px`,
+                        height: `${size}px`,
+                        background: background,
+                        border: border,
+                        color: color,
+                        fontSize: `${fontSize}px`,
+                        textShadow: '1px 1px 0px rgba(255,255,255,0.6)',
+                        boxShadow: 'inset 0 0 4px rgba(255,255,255,0.5), 0 4px 6px rgba(0,0,0,0.2)'
+                    }}
+                >
+                    <span style={{ 
+                        position: isHoled ? 'absolute' : 'static', 
+                        top: isHoled ? '8%' : 'auto',
+                        lineHeight: 1
+                    }}>
+                        {value}
+                    </span>
+                </div>
+            );
+        };
+
+        function App() {
+            // 【修正】前回のコード生成時に省略してしまった状態変数の宣言をすべて復元しました。
+            const [course, setCourse] = useState('easy');
+            const [hintEnabled, setHintEnabled] = useState(true);
+            const [problems, setProblems] = useState([]);
+            const [currentIndex, setCurrentIndex] = useState(0);
             
-            if (type === 'coin') {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.type = 'triangle'; // 三角波
-                osc.frequency.setValueAtTime(130, now); // 超低音
-                osc.frequency.exponentialRampToValueAtTime(80, now + 0.12);
-                
-                gain.gain.setValueAtTime(0.95, now); // ゲインを引き上げて聞き取りやすく
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
-                
-                osc.start(now);
-                osc.stop(now + 0.12);
-            } 
-            else if (type === 'success') {
-                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-                notes.forEach((freq, idx) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
+            const [trayCoins, setTrayCoins] = useState([]);
+            const [feedback, setFeedback] = useState(null);
+            const [isGameComplete, setIsGameComplete] = useState(false);
+
+            const [showCourseTip, setShowCourseTip] = useState(true);
+            const [showHintTip, setShowHintTip] = useState(true);
+
+            useEffect(() => {
+                if (isGameComplete) {
+                    AudioEngine.playFanfare();
                     
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    const duration = 3000;
+                    const end = Date.now() + duration;
+
+                    (function frame() {
+                        confetti({
+                            particleCount: 5,
+                            angle: 60,
+                            spread: 55,
+                            origin: { x: 0 },
+                            colors: ['#ffb6c1', '#87ceeb', '#98fb98', '#ffd700']
+                        });
+                        confetti({
+                            particleCount: 5,
+                            angle: 120,
+                            spread: 55,
+                            origin: { x: 1 },
+                            colors: ['#ffb6c1', '#87ceeb', '#98fb98', '#ffd700']
+                        });
+
+                        if (Date.now() < end) {
+                            requestAnimationFrame(frame);
+                        }
+                    }());
+                }
+            }, [isGameComplete]);
+
+            const generateProblems = useCallback((selectedCourse) => {
+                const courseProducts = [...PRODUCTS[selectedCourse]];
+                const newProblems = [];
+                const problemCount = 5;
+
+                for (let i = 0; i < problemCount; i++) {
+                    const randIdx = Math.floor(Math.random() * courseProducts.length);
+                    const product = courseProducts[randIdx];
                     
-                    gain.gain.setValueAtTime(0.08, now + idx * 0.1); // 置く音と音量感を合わせるため、少しゲインをマイルドに
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
-                    
-                    osc.start(now + idx * 0.1);
-                    osc.stop(now + idx * 0.1 + 0.25);
-                });
-            } 
-            else if (type === 'fail') {
-                const osc1 = audioCtx.createOscillator();
-                const osc2 = audioCtx.createOscillator();
-                const gain1 = audioCtx.createGain();
-                const gain2 = audioCtx.createGain();
-                
-                osc1.connect(gain1); gain1.connect(audioCtx.destination);
-                osc2.connect(gain2); gain2.connect(audioCtx.destination);
-                
-                osc1.type = 'sawtooth';
-                osc2.type = 'sawtooth';
-                
-                osc1.frequency.setValueAtTime(180, now);
-                osc2.frequency.setValueAtTime(185, now);
-                
-                gain1.gain.setValueAtTime(0.12, now);
-                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-                gain2.gain.setValueAtTime(0.12, now);
-                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-                
-                osc1.start(now); osc1.stop(now + 0.4);
-                osc2.start(now); osc2.stop(now + 0.4);
-            }
-            else if (type === 'perfect') {
-                const fanfare = [523.25, 659.25, 783.99, 1046.50, 1046.50];
-                const durations = [0.15, 0.15, 0.15, 0.3, 0.5];
-                let timeAccum = 0;
-                fanfare.forEach((freq, idx) => {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(freq, now + timeAccum);
-                    gain.gain.setValueAtTime(0.15, now + timeAccum);
-                    gain.gain.exponentialRampToValueAtTime(0.01, now + timeAccum + durations[idx]);
-                    osc.start(now + timeAccum);
-                    osc.stop(now + timeAccum + durations[idx]);
-                    timeAccum += durations[idx] - 0.02;
-                });
-            }
-        }
+                    const variation = Math.floor(Math.random() * 21) - 10;
+                    let price = product.basePrice + variation;
+                    price = Math.max(10, price);
 
-        function generateRandomPrice(min, max, course) {
-            if (course === 'easy') {
-                const roundedMin = Math.ceil(min / 10);
-                const roundedMax = Math.floor(max / 10);
-                return (Math.floor(Math.random() * (roundedMax - roundedMin + 1)) + roundedMin) * 10;
-            } else {
-                let price;
-                do {
-                    price = Math.floor(Math.random() * (max - min + 1)) + min;
-                } while (price % 10 === 0);
-                return price;
-            }
-        }
+                    let paymentAmount = 100;
+                    let paymentCoins = [100];
 
-        function setupQuestions() {
-            const templates = productTemplates[currentCourse];
-            const shuffled = [...templates].sort(() => Math.random() - 0.5);
-            selectedQuestions = shuffled.slice(0, 5).map(item => {
-                return {
-                    icon: item.icon,
-                    name: item.name,
-                    price: generateRandomPrice(item.minPrice, item.maxPrice, currentCourse)
-                };
-            });
-            currentQuestionIndex = 0;
-            correctAnswers = 0;
-            currentProduct = selectedQuestions[currentQuestionIndex];
-        }
-
-        // お財布の中身と合計表示の更新
-        function updateDisplay() {
-            document.getElementById('progress-info').textContent = `問題 ${currentQuestionIndex + 1}/5 (せいかい: ${correctAnswers})`;
-            
-            document.getElementById('product-icon').textContent = currentProduct.icon;
-            document.getElementById('product-name').textContent = currentProduct.name;
-            document.getElementById('product-price').textContent = `${currentProduct.price}円`;
-
-            updateTotalDisplay();
-
-            document.getElementById('check-btn').style.display = 'inline-block';
-        }
-
-        function updateTotalDisplay() {
-            const coinsInPayment = document.getElementById('payment-area').querySelectorAll('.coin');
-            let sum = 0;
-            coinsInPayment.forEach(coin => {
-                sum += parseInt(coin.getAttribute('data-value'), 10);
-            });
-            totalPlacedAmount = sum;
-
-            // プレースホルダーの表示制御
-            const placeholder = document.getElementById('payment-placeholder');
-            if (coinsInPayment.length > 0) {
-                placeholder.style.display = 'none';
-            } else {
-                placeholder.style.display = 'block';
-            }
-
-            const totalDisplayEl = document.getElementById('total-amount');
-            if (hintMode) {
-                totalDisplayEl.textContent = `合計: ${totalPlacedAmount}円`;
-                totalDisplayEl.style.visibility = 'visible';
-            } else {
-                totalDisplayEl.textContent = `合計: ？？？円`;
-            }
-        }
-
-        // コースに合わせたお支払いトレイ（payment-area）の段分けレーンを動的生成する
-        // ※明確な枠線やラベルテキストは無くし、完全に透明な整列段にします。
-        function setupPaymentLanes() {
-            const paymentArea = document.getElementById('payment-area');
-            paymentArea.innerHTML = ''; // クリア
-
-            let values = [];
-            if (currentCourse === 'easy') {
-                // やさしいコースは縦に2段並びにする
-                paymentArea.className = 'payment-area layout-easy';
-                values = [100, 10];
-            } else {
-                // ふつう・むずかしいコースはグリッド化 (横2列 × 縦3段)
-                // 1列目(左): 500, 100, 50 | 2列目(右): 10, 5, 1 になるように交互に配置
-                paymentArea.className = 'payment-area layout-grid';
-                values = [500, 10, 100, 5, 50, 1];
-            }
-
-            // 各硬貨専用 of 透明な段を構築
-            values.forEach(val => {
-                const lane = document.createElement('div');
-                lane.className = 'payment-lane';
-                lane.setAttribute('data-target-value', val);
-
-                const coinsContainer = document.createElement('div');
-                coinsContainer.className = 'lane-coins-container';
-                coinsContainer.id = `lane-coins-${val}`;
-
-                lane.appendChild(coinsContainer);
-                paymentArea.appendChild(lane);
-            });
-        }
-
-        function generateCoins() {
-            // 先にお支払いトレイ of 段を整理
-            setupPaymentLanes();
-
-            const bank = document.getElementById('coin-bank');
-            bank.innerHTML = '';
-
-            // お財布の水平行(row1, row2)に分離して作成
-            const row1 = document.createElement('div');
-            row1.className = 'coin-row';
-            const row2 = document.createElement('div');
-            row2.className = 'coin-row';
-
-            let coinSpecs = [];
-            if (currentCourse === 'easy') {
-                coinSpecs = [
-                    { value: 100, class: 'coin-100', count: 10, targetRow: row1, cols: 5 },
-                    { value: 10, class: 'coin-10', count: 10, targetRow: row2, cols: 5 }
-                ];
-            } else if (currentCourse === 'normal') {
-                // ふつう: おさいふ枚数設定（ご要望に応じた枚数）
-                coinSpecs = [
-                    { value: 500, class: 'coin-500', count: 1, targetRow: row1, cols: 2 },
-                    { value: 100, class: 'coin-100', count: 9, targetRow: row1, cols: 3 }, // 5枚から9枚へ、列数を3に
-                    { value: 50, class: 'coin-50', count: 2, targetRow: row1, cols: 2 },
-                    { value: 10, class: 'coin-10', count: 9, targetRow: row2, cols: 3 }, // 5枚から9枚へ、列数を3に
-                    { value: 5, class: 'coin-5', count: 2, targetRow: row2, cols: 2 },
-                    { value: 1, class: 'coin-1', count: 9, targetRow: row2, cols: 3 }  // 5枚から9枚へ、列数を3に
-                ];
-            } else {
-                coinSpecs = [
-                    { value: 500, class: 'coin-500', count: 2, targetRow: row1, cols: 3 },
-                    { value: 100, class: 'coin-100', count: 9, targetRow: row1, cols: 3 },
-                    { value: 50, class: 'coin-50', count: 2, targetRow: row1, cols: 3 },
-                    { value: 10, class: 'coin-10', count: 9, targetRow: row2, cols: 3 },
-                    { value: 5, class: 'coin-5', count: 2, targetRow: row2, cols: 3 },
-                    { value: 1, class: 'coin-1', count: 9, targetRow: row2, cols: 3 }
-                ];
-            }
-
-            coinSpecs.forEach(spec => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'coin-type-wrapper';
-
-                const label = document.createElement('div');
-                label.className = 'coin-label';
-                label.textContent = `${spec.value}円`;
-                wrapper.appendChild(label);
-
-                const holder = document.createElement('div');
-                holder.className = 'coin-holder';
-                
-                const stack = document.createElement('div');
-                stack.className = 'coin-stack';
-                stack.id = `stack-${spec.value}`;
-                
-                stack.style.display = 'grid';
-                stack.style.gridTemplateColumns = `repeat(${spec.cols}, 1fr)`;
-                stack.style.gap = '4px';
-                stack.style.justifyItems = 'center';
-                stack.style.alignContent = 'start';
-
-                for (let i = 0; i < spec.count; i++) {
-                    const coinEl = document.createElement('div');
-                    coinEl.className = `coin ${spec.class}`;
-                    // すべての硬貨（50円や5円を含む）に数字を正しく表示する
-                    coinEl.textContent = spec.value;
-                    coinEl.setAttribute('data-value', spec.value);
-                    coinEl.setAttribute('draggable', 'true');
-                    coinEl.id = `coin-${spec.value}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                    
-                    bindCoinEvents(coinEl);
-                    stack.appendChild(coinEl);
-                }
-
-                holder.appendChild(stack);
-                wrapper.appendChild(holder);
-                spec.targetRow.appendChild(wrapper);
-            });
-
-            bank.appendChild(row1);
-            bank.appendChild(row2);
-        }
-
-        function bindCoinEvents(coin) {
-            coin.addEventListener('click', () => {
-                toggleCoinLocation(coin);
-            });
-
-            coin.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('text/plain', coin.id);
-                coin.classList.add('dragging');
-                initAudio();
-            });
-
-            coin.addEventListener('dragend', () => {
-                coin.classList.remove('dragging');
-            });
-
-            coin.addEventListener('touchstart', handleTouchStart, { passive: false });
-            coin.addEventListener('touchmove', handleTouchMove, { passive: false });
-            coin.addEventListener('touchend', handleTouchEnd, { passive: false });
-        }
-
-        // コインの移動切り替え（お財布 ↔ 支払いトレイの各段）
-        function toggleCoinLocation(coin) {
-            const val = coin.getAttribute('data-value');
-            const parent = coin.parentElement;
-
-            if (parent.classList.contains('lane-coins-container')) {
-                // 支払いトレイにある場合はおさいふの元の額面スタックへ戻す
-                const originalStack = document.getElementById('stack-' + val);
-                if (originalStack) {
-                    coin.classList.remove('coin-placed');
-                    originalStack.appendChild(coin);
-                } else {
-                    coin.remove();
-                }
-            } else {
-                // おさいふにある場合は、対応する額面の支払いレーン（段）へ移動
-                const targetContainer = document.getElementById('lane-coins-' + val);
-                if (targetContainer) {
-                    coin.classList.add('coin-placed');
-                    targetContainer.appendChild(coin);
-                }
-            }
-            playSound('coin');
-            updateTotalDisplay();
-        }
-
-        let touchActiveElement = null;
-        let ghostElement = null;
-        let touchOffsetX = 0;
-        let touchOffsetY = 0;
-
-        function handleTouchStart(e) {
-            initAudio();
-            const touch = e.touches[0];
-            touchActiveElement = this;
-            
-            const rect = touchActiveElement.getBoundingClientRect();
-            touchOffsetX = touch.clientX - rect.left;
-            touchOffsetY = touch.clientY - rect.top;
-
-            ghostElement = touchActiveElement.cloneNode(true);
-            ghostElement.classList.add('touch-ghost');
-            ghostElement.style.width = rect.width + 'px';
-            ghostElement.style.height = rect.height + 'px';
-            ghostElement.style.top = touch.clientY + 'px';
-            ghostElement.style.left = touch.clientX + 'px';
-            document.body.appendChild(ghostElement);
-
-            touchActiveElement.classList.add('dragging');
-            e.preventDefault();
-        }
-
-        function handleTouchMove(e) {
-            if (!ghostElement) return;
-            const touch = e.touches[0];
-            ghostElement.style.top = touch.clientY + 'px';
-            ghostElement.style.left = touch.clientX + 'px';
-
-            const paymentArea = document.getElementById('payment-area');
-            const payRect = paymentArea.getBoundingClientRect();
-            if (touch.clientX >= payRect.left && touch.clientX <= payRect.right &&
-                touch.clientY >= payRect.top && touch.clientY <= payRect.bottom) {
-                paymentArea.classList.add('drag-over');
-            } else {
-                paymentArea.classList.remove('drag-over');
-            }
-            e.preventDefault();
-        }
-
-        function handleTouchEnd(e) {
-            if (!touchActiveElement) return;
-            
-            const touch = e.changedTouches[0];
-            const paymentArea = document.getElementById('payment-area');
-            const payRect = paymentArea.getBoundingClientRect();
-            
-            paymentArea.classList.remove('drag-over');
-
-            if (touch.clientX >= payRect.left && touch.clientX <= payRect.right &&
-                touch.clientY >= payRect.top && touch.clientY <= payRect.bottom) {
-                // 支払いエリアにドロップされたら、コインに対応する専用レーンへ移動
-                const val = touchActiveElement.getAttribute('data-value');
-                const targetContainer = document.getElementById('lane-coins-' + val);
-                
-                if (targetContainer && touchActiveElement.parentElement !== targetContainer) {
-                    touchActiveElement.classList.add('coin-placed');
-                    targetContainer.appendChild(touchActiveElement);
-                    playSound('coin');
-                }
-            } else {
-                // 支払いエリアの外に放り投げられた場合、お財布に戻す
-                if (touchActiveElement.parentElement.classList.contains('lane-coins-container')) {
-                    const val = touchActiveElement.getAttribute('data-value');
-                    const originalStack = document.getElementById('stack-' + val);
-                    if (originalStack) {
-                        touchActiveElement.classList.remove('coin-placed');
-                        originalStack.appendChild(touchActiveElement);
-                        playSound('coin');
-                    }
-                }
-            }
-
-            if (ghostElement) {
-                ghostElement.remove();
-                ghostElement = null;
-            }
-            touchActiveElement.classList.remove('dragging');
-            touchActiveElement = null;
-            
-            updateTotalDisplay();
-            e.preventDefault();
-        }
-
-        function setupDragAndDrop() {
-            const paymentArea = document.getElementById('payment-area');
-
-            paymentArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                paymentArea.classList.add('drag-over');
-            });
-
-            paymentArea.addEventListener('dragleave', () => {
-                paymentArea.classList.remove('drag-over');
-            });
-
-            paymentArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                paymentArea.classList.remove('drag-over');
-                
-                const id = e.dataTransfer.getData('text/plain');
-                const coin = document.getElementById(id);
-                if (coin) {
-                    const val = coin.getAttribute('data-value');
-                    const targetContainer = document.getElementById('lane-coins-' + val);
-                    
-                    if (targetContainer && coin.parentElement !== targetContainer) {
-                        coin.classList.add('coin-placed');
-                        targetContainer.appendChild(coin);
-                        playSound('coin');
-                    }
-                    updateTotalDisplay();
-                }
-            });
-
-            const coinBank = document.getElementById('coin-bank');
-            coinBank.addEventListener('dragover', (e) => {
-                e.preventDefault();
-            });
-
-            coinBank.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const id = e.dataTransfer.getData('text/plain');
-                const coin = document.getElementById(id);
-                if (coin && coin.parentElement.classList.contains('lane-coins-container')) {
-                    const val = coin.getAttribute('data-value');
-                    const originalStack = document.getElementById('stack-' + val);
-                    if (originalStack) {
-                        coin.classList.remove('coin-placed');
-                        originalStack.appendChild(coin);
-                        playSound('coin');
-                    }
-                    updateTotalDisplay();
-                }
-            });
-        }
-
-        // モーダルを表示する（自動消去を完全廃止し、「わかった（つぎのもんだいへ）」ボタンで閉じる）
-        function showMessage(text, isSuccess, isGameOver = false) {
-            const messageDiv = document.getElementById('message');
-            const messageTextArea = document.getElementById('message-text');
-            const overlay = document.getElementById('popup-overlay');
-            const understandBtn = document.getElementById('understand-btn');
-            
-            messageTextArea.textContent = text;
-            messageDiv.className = 'message ' + (isSuccess ? 'success' : 'error');
-            
-            messageDiv.style.display = 'flex';
-            overlay.style.display = 'block';
-
-            if (isSuccess) {
-                playSound('success');
-                if (isGameOver) {
-                    understandBtn.textContent = "さいしょからあそぶ";
-                    understandBtn.className = "btn-understand btn-blink"; // 最後の結果発表は「あそぶ」点滅
-                    understandBtn.onclick = () => {
-                        hideMessage();
-                        restartGame();
-                    };
-                } else {
-                    // 正解のアドバイスモーダル内に直接「つぎのもんだいへ」ボタンを表示します！
-                    understandBtn.textContent = "つぎのもんだいへ";
-                    understandBtn.className = "btn-understand btn-blink"; // 次の問題誘導点滅をモーダル内にセット
-                    understandBtn.onclick = () => {
-                        hideMessage();
-                        goToNextQuestion();
-                    };
-                }
-            } else {
-                playSound('fail');
-                understandBtn.textContent = "もういちど やる";
-                understandBtn.className = "btn-understand";
-                understandBtn.onclick = hideMessage;
-            }
-            
-            // 誤タップ防止：オーバーレイやダイアログの周りを触っても閉じず、
-            // 「わかった（つぎのもんだいへ）」ボタンのクリックでのみ確実に閉じるように設定
-            overlay.onclick = null;
-        }
-
-        function hideMessage() {
-            document.getElementById('message').style.display = 'none';
-            document.getElementById('popup-overlay').style.display = 'none';
-        }
-
-        // 支払い方法に効率化できる組み合わせ（アドバイス）がないか確認する関数
-        function checkCoinCombinations() {
-            const coinsInPayment = document.getElementById('payment-area').querySelectorAll('.coin');
-            
-            // 各硬貨の枚数をカウントする
-            const counts = {
-                1: 0,
-                5: 0,
-                10: 0,
-                50: 0,
-                100: 0,
-                500: 0
-            };
-            
-            coinsInPayment.forEach(coin => {
-                const val = parseInt(coin.getAttribute('data-value'), 10);
-                if (counts[val] !== undefined) {
-                    counts[val]++;
-                }
-            });
-            
-            let advice = "";
-            
-            // 「やさしい」コース以外の場合のみ、50円、5円、500円へのまとめアドバイスを表示します。
-            if (currentCourse !== 'easy') {
-                if (counts[10] >= 5) {
-                    advice += "\n🪙 10円玉が5枚あるね！\n50円玉1枚にまとめてはらうこともできるよ！";
-                }
-                if (counts[1] >= 5) {
-                    advice += "\n🪙 1円玉が5枚あるね！\n5円玉1枚にまとめてはらうこともできるよ！";
-                }
-                if (counts[100] >= 5) {
-                    advice += "\n🪙 100円玉が5枚あるね！\n500円玉1枚にまとめてはらうこともできるよ！";
-                }
-                if (counts[50] >= 2) {
-                    advice += "\n🪙 50円玉が2枚あるね！\n100円玉1枚にまとめてはらうこともできるよ！";
-                }
-                if (counts[5] >= 2) {
-                    advice += "\n🪙 5円玉が2枚あるね！\n10円玉1枚にまとめてはらうこともできるよ！";
-                }
-            }
-            
-            return advice;
-        }
-
-        // 次の問題に進む処理の共通化
-        function goToNextQuestion() {
-            currentQuestionIndex++;
-            if (currentQuestionIndex < 5) {
-                currentProduct = selectedQuestions[currentQuestionIndex];
-                updateDisplay();
-                generateCoins();
-                updateTotalDisplay();
-            } else {
-                // 5問終了、結果発表
-                let finalMsg = '【結果発表】\n5問中、' + correctAnswers + '問 正解できました！';
-                if (correctAnswers === 5) {
-                    finalMsg += "\nぜんぶ大せいかい！お買い物マスターだね！👑";
-                    playSound('perfect');
-                } else {
-                    finalMsg += "\nつぎはパーフェクトをめざしてがんばろう！🌟";
-                    playSound('success');
-                }
-                showMessage(finalMsg, true, true); // gameoverフラグを立ててお祝い
-            }
-        }
-
-        // ゲームリセット・再スタート処理の共通化
-        function restartGame() {
-            currentQuestionIndex = 0;
-            correctAnswers = 0;
-            setupQuestions();
-            updateDisplay();
-            generateCoins();
-            updateTotalDisplay();
-        }
-
-        function setupButtons() {
-            const checkBtn = document.getElementById('check-btn');
-            const resetBtn = document.getElementById('reset-btn');
-
-            checkBtn.addEventListener('click', () => {
-                initAudio();
-                if (totalPlacedAmount === currentProduct.price) {
-                    correctAnswers++;
-                    const randomSuccessMsg = config.success_messages[Math.floor(Math.random() * config.success_messages.length)];
-                    
-                    // アドバイスメッセージの算出
-                    const coinAdvice = checkCoinCombinations();
-                    const fullMessage = randomSuccessMsg + coinAdvice;
-                    
-                    // 正解時のモーダルを表示
-                    showMessage(fullMessage, true, false);
-                } else {
-                    let failMsg = config.try_again_message;
-                    if (hintMode) {
-                        if (totalPlacedAmount > currentProduct.price) {
-                            failMsg += "\n(少しお金が多すぎるみたいだよ！)";
+                    if (selectedCourse === 'easy') {
+                        paymentAmount = 100;
+                        paymentCoins = [100];
+                    } else if (selectedCourse === 'normal') {
+                        if (price < 200 && Math.random() < 0.4) {
+                            paymentAmount = 200;
+                            paymentCoins = [100, 100];
                         } else {
-                            failMsg += "\n(お金が少し足りないみたいだよ！)";
+                            paymentAmount = 500;
+                            paymentCoins = [500];
+                        }
+                    } else if (selectedCourse === 'hard') {
+                        paymentAmount = 1000;
+                        paymentCoins = [];
+                    }
+
+                    if (price >= paymentAmount) {
+                        paymentAmount = price + (100 - (price % 100) || 100);
+                        paymentCoins = [paymentAmount];
+                    }
+
+                    newProblems.push({ ...product, price, paymentAmount, paymentCoins });
+                }
+                return newProblems;
+            }, []);
+
+            const startGame = useCallback((newCourse = course) => {
+                setCourse(newCourse);
+                setProblems(generateProblems(newCourse));
+                setCurrentIndex(0);
+                setTrayCoins([]);
+                setFeedback(null);
+                setIsGameComplete(false);
+                
+                if (newCourse !== course) {
+                    setShowCourseTip(false);
+                }
+            }, [course, generateProblems]);
+
+            useEffect(() => {
+                startGame(course);
+            }, []);
+
+            const currentProblem = problems[currentIndex];
+            const expectedChange = currentProblem ? currentProblem.paymentAmount - currentProblem.price : 0;
+            const currentTotal = trayCoins.reduce((sum, coin) => sum + coin.value, 0);
+
+            const handleAddCoin = (value) => {
+                if (feedback?.type === 'success') return;
+                AudioEngine.playCoin();
+                setTrayCoins(prev => [...prev, { id: Math.random().toString(36).substr(2, 9), value }]);
+                setFeedback(null);
+            };
+
+            const handleRemoveCoin = (idToRemove) => {
+                if (feedback?.type === 'success') return;
+                AudioEngine.playCoin(); 
+                setTrayCoins(prev => prev.filter(c => c.id !== idToRemove));
+                setFeedback(null);
+            };
+
+            const handleCheckAnswer = () => {
+                if (currentTotal === expectedChange) {
+                    const optimalCount = calculateOptimalCoinCount(expectedChange);
+                    
+                    if (trayCoins.length > optimalCount) {
+                        AudioEngine.playCorrect(); 
+                        const counts = {};
+                        trayCoins.forEach(c => { counts[c.value] = (counts[c.value] || 0) + 1; });
+
+                        let advice = "こうかを まとめて みよう。";
+                        if (counts[1] >= 5) advice = "1えんだまが 5まい いじょう あるね。 5えんだまに かえられないかな？";
+                        else if (counts[5] >= 2) advice = "5えんだまが 2まい いじょう あるね。 10えんだまに かえられないかな？";
+                        else if (counts[10] >= 5) advice = "10えんだまが 5まい いじょう あるね。 50えんだまに かえられないかな？";
+                        else if (counts[50] >= 2) advice = "50えんだまが 2まい いじょう あるね。 100えんだまに かえられないかな？";
+                        else if (counts[100] >= 5) advice = "100えんだまが 5まい いじょう あるね。 500えんだまに かえられないかな？";
+
+                        setFeedback({
+                            type: 'info',
+                            message: `きんがくは せいかい！ でも、もっと すくない かず（${optimalCount}まい）で わたせるよ。${advice} もういちど 「こたえあわせ」を してね！`
+                        });
+                    } else {
+                        AudioEngine.playCorrect(); 
+                        setFeedback({ type: 'success', message: 'かんぺき！ すばらしい！' });
+                    }
+                } else if (currentTotal < expectedChange) {
+                    AudioEngine.playError(); 
+                    const shortage = expectedChange - currentTotal;
+                    let suggestCoin = 1;
+                    for (let coin of COINS) {
+                        if (shortage >= coin) {
+                            suggestCoin = coin;
+                            break;
                         }
                     }
-                    showMessage(failMsg, false);
-                }
-            });
-
-            resetBtn.addEventListener('click', () => {
-                initAudio();
-                // 支払いトレイの中のすべてのコインをお財布に戻す
-                const coins = document.getElementById('payment-area').querySelectorAll('.coin');
-                coins.forEach(coin => {
-                    const value = coin.getAttribute('data-value');
-                    const originalStack = document.getElementById('stack-' + value);
-                    if (originalStack) {
-                        coin.classList.remove('coin-placed');
-                        originalStack.appendChild(coin);
-                    } else {
-                        coin.remove();
+                    setFeedback({ 
+                        type: 'error', 
+                        message: `おつりが たりない みたい。 【 ${suggestCoin}えんだま 】を たして みようか？` 
+                    });
+                } else {
+                    AudioEngine.playError(); 
+                    const overage = currentTotal - expectedChange;
+                    const uniqueTrayCoins = [...new Set(trayCoins.map(c => c.value))].sort((a, b) => a - b);
+                    let suggestCoin = uniqueTrayCoins[uniqueTrayCoins.length - 1]; 
+                    
+                    for (let coin of uniqueTrayCoins) {
+                        if (coin >= overage) {
+                            suggestCoin = coin;
+                            break; 
+                        }
                     }
-                });
-                
-                playSound('coin');
-                updateTotalDisplay();
-            });
+                    setFeedback({ 
+                        type: 'error', 
+                        message: `おつりが おおすぎるよ。 トレイにある 【 ${suggestCoin}えんだま 】を へらして みよう。` 
+                    });
+                }
+            };
+
+            const handleNextProblem = () => {
+                if (currentIndex < problems.length - 1) {
+                    setCurrentIndex(prev => prev + 1);
+                    setTrayCoins([]);
+                    setFeedback(null);
+                } else {
+                    setIsGameComplete(true);
+                    setFeedback(null);
+                }
+            };
+
+            if (!currentProblem) return <div className="flex items-center justify-center h-screen font-bold text-2xl text-pink-500">じゅんびちゅう...</div>;
+
+            return (
+                <div className="h-screen w-screen text-slate-800 selection:bg-blue-200 overflow-hidden flex flex-col">
+                    <div className="flex-1 flex flex-col p-2 md:p-3 max-w-7xl mx-auto w-full h-full">
+                        
+                        {/* Header */}
+                        <header className="flex justify-between items-center bg-white p-3 rounded-2xl shadow-md mb-3 border-4 border-white flex-shrink-0 relative z-50">
+                            <h1 className="text-xl md:text-2xl font-black text-pink-500 flex items-center gap-2 drop-shadow-sm">
+                                おつりをピッタリわたそう
+                            </h1>
+                            <div className="flex items-center gap-3 text-sm font-bold">
+                                
+                                <div className="hidden md:flex items-center bg-pink-50 p-1 rounded-xl border-2 border-pink-100">
+                                    <button onClick={() => { startGame('easy'); setShowCourseTip(false); }} className={`px-4 py-2 rounded-lg transition-all ${course === 'easy' ? 'bg-white shadow-sm text-pink-500 border-2 border-pink-200' : 'text-pink-400 hover:bg-pink-100 border-2 border-transparent'}`}>かんたん</button>
+                                    
+                                    <div className="relative inline-flex justify-center items-center">
+                                        {showCourseTip && (
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 z-[60]">
+                                                <div className="bg-sky-500 text-white px-4 py-2 rounded-2xl text-[14px] font-black w-max shadow-lg animate-bounce border-2 border-sky-400 relative">
+                                                    <div className="absolute -top-[10px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[10px] border-b-sky-500"></div>
+                                                    コースを えらぼう
+                                                </div>
+                                            </div>
+                                        )}
+                                        <button onClick={() => { startGame('normal'); setShowCourseTip(false); }} className={`px-4 py-2 rounded-lg transition-all ${course === 'normal' ? 'bg-white shadow-sm text-pink-500 border-2 border-pink-200' : 'text-pink-400 hover:bg-pink-100 border-2 border-transparent'}`}>ふつう</button>
+                                    </div>
+
+                                    <button onClick={() => { startGame('hard'); setShowCourseTip(false); }} className={`px-4 py-2 rounded-lg transition-all ${course === 'hard' ? 'bg-white shadow-sm text-pink-500 border-2 border-pink-200' : 'text-pink-400 hover:bg-pink-100 border-2 border-transparent'}`}>むずかしい</button>
+                                </div>
+                                
+                                <div className="relative flex justify-end">
+                                    {showHintTip && (
+                                        <div className="absolute top-full right-0 mt-6 z-[70]">
+                                            <div className="bg-amber-500 text-white px-3 py-2 rounded-2xl text-[13px] leading-snug font-black w-max shadow-lg animate-bounce border-2 border-amber-400 text-center relative">
+                                                <div className="absolute -top-[10px] right-[40px] w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[10px] border-b-amber-500"></div>
+                                                ヒントの こたえを だすか<br/>ださないかを えらぼう
+                                            </div>
+                                        </div>
+                                    )}
+                                    <button onClick={() => { setHintEnabled(!hintEnabled); setShowHintTip(false); }} className={`flex items-center gap-1 px-4 py-2 rounded-xl border-b-4 transition-all active:border-b-0 active:translate-y-1 ${hintEnabled ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-slate-100 border-slate-300 text-slate-400'}`}>
+                                        <HelpCircle size={18} /> ヒント
+                                    </button>
+                                </div>
+                            </div>
+                        </header>
+
+                        {isGameComplete ? (
+                            <div className="flex-1 flex flex-col items-center justify-center bg-white rounded-3xl shadow-xl p-8 border-8 border-pink-200 z-50">
+                                <div className="text-7xl mb-4 animate-bounce">🎉</div>
+                                <h2 className="text-4xl font-black text-pink-500 mb-4 drop-shadow-sm">ぜんもん クリア！</h2>
+                                <p className="text-slate-600 mb-8 text-xl font-bold">きみは りっぱな レジマスターだ！</p>
+                                <button onClick={() => startGame()} className="bg-sky-400 hover:bg-sky-500 text-white font-black py-4 px-10 rounded-full shadow-lg border-b-4 border-sky-600 active:border-b-0 active:translate-y-1 transition-all text-2xl">もういちど あそぶ</button>
+                            </div>
+                        ) : (
+                            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 min-h-0">
+                                
+                                {/* Left Column: 商品と支払い */}
+                                <div className="flex flex-col gap-3 h-full">
+                                    <div className="flex justify-between items-center font-bold text-sky-600 bg-sky-50 px-5 py-3 rounded-2xl shadow-sm border-4 border-sky-100 flex-shrink-0">
+                                        <span className="text-lg">だい {currentIndex + 1} もん</span>
+                                        {hintEnabled && (
+                                            <span className="text-amber-600 flex items-center gap-1 bg-amber-100 px-3 py-1 rounded-full text-sm whitespace-nowrap">
+                                                <Lightbulb size={18} /> こたえ: {expectedChange}えん
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="flex-1 bg-[#FFF8DC] p-4 rounded-3xl shadow-md border-4 border-[#FFD700] text-center flex flex-col justify-center items-center">
+                                        <div className="text-7xl mb-2 drop-shadow-md">{currentProblem.icon}</div>
+                                        <div className="text-2xl font-black text-slate-700">{currentProblem.name}</div>
+                                        <div className="text-4xl font-black text-rose-500 mt-2 bg-white px-6 py-2 rounded-full shadow-inner border-2 border-rose-100">{currentProblem.price}えん</div>
+                                    </div>
+
+                                    <div className="h-[30%] bg-blue-50 p-4 rounded-3xl shadow-md border-4 border-blue-200 text-center flex flex-col justify-center items-center flex-shrink-0 relative mt-3">
+                                        <div className="absolute top-[-15px] bg-white px-3 py-1 rounded-full text-[13px] md:text-sm font-bold text-blue-600 border-2 border-blue-200 shadow-sm whitespace-nowrap">おきゃくさんが だした おかね</div>
+                                        {currentProblem.paymentAmount >= 1000 ? (
+                                            <div className="w-40 h-20 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-500 rounded-lg flex items-center justify-between px-4 shadow-md mt-2">
+                                                <div className="text-3xl">👨</div>
+                                                <div className="text-3xl font-black text-green-800 drop-shadow-sm">1000</div>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-2 flex gap-1 justify-center items-center">
+                                                {currentProblem.paymentCoins.map((val, idx) => (
+                                                    <Coin 
+                                                        key={idx} 
+                                                        value={val} 
+                                                        scaleMultiplier={currentProblem.paymentCoins.length > 1 ? 2.1 : 2.5} 
+                                                    />
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Middle Column: トレイとアクション */}
+                                <div className="flex flex-col gap-3 h-full">
+                                    <div className="flex-1 bg-[#F0FFF0] rounded-3xl p-4 shadow-md border-4 border-[#90EE90] flex flex-col relative mt-3">
+                                        <div className="absolute top-[-15px] left-1/2 transform -translate-x-1/2 bg-white px-4 py-1 rounded-full text-sm font-bold text-green-600 border-2 border-[#90EE90] shadow-sm z-10 whitespace-nowrap">
+                                            おつりを おく トレイ
+                                        </div>
+                                        <div className="flex justify-end items-center mb-2 mt-4 flex-shrink-0">
+                                            <div className="text-3xl font-black text-green-600 bg-white px-4 py-1 rounded-full shadow-inner border-2 border-green-100">{currentTotal}えん</div>
+                                        </div>
+                                        
+                                        <div className="flex-1 flex flex-col gap-2 overflow-y-auto pt-2">
+                                            {COINS.map(coinValue => {
+                                                const coinsOfThisValue = trayCoins.filter(c => c.value === coinValue);
+                                                if (coinsOfThisValue.length === 0) return null;
+                                                
+                                                return (
+                                                    <div key={coinValue} className="flex flex-wrap gap-2 justify-start">
+                                                        {coinsOfThisValue.map(coin => (
+                                                            <button key={coin.id} onClick={() => handleRemoveCoin(coin.id)} className="transition-transform hover:scale-110 active:scale-95 duration-200 drop-shadow-md">
+                                                                <Coin value={coin.value} scaleMultiplier={2.2} />
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {trayCoins.length === 0 && (
+                                                <div className="w-full h-full flex flex-col items-center justify-center text-green-600/60 font-bold text-center p-4 gap-2">
+                                                    <div className="text-lg">レジから こうかを タップして<br/>ここに いれます</div>
+                                                    <div className="text-sm">もどす ときは、<br/>こうかを タップ します</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-3 flex-shrink-0">
+                                        <button onClick={handleCheckAnswer} disabled={trayCoins.length === 0 || feedback?.type === 'success'} className="flex-1 bg-pink-500 hover:bg-pink-600 disabled:bg-slate-300 disabled:border-slate-400 text-white font-black py-3 rounded-2xl border-b-4 border-pink-700 active:border-b-0 active:translate-y-1 transition-all shadow-md flex justify-center items-center gap-2 text-xl">
+                                            <CheckCircle size={24} /> こたえあわせ
+                                        </button>
+                                        <button onClick={() => { setTrayCoins([]); setFeedback(null); }} disabled={trayCoins.length === 0 || feedback?.type === 'success'} className="w-auto px-4 flex justify-center items-center bg-sky-400 hover:bg-sky-500 disabled:bg-slate-200 disabled:text-slate-400 disabled:border-slate-300 text-white font-bold rounded-2xl border-b-4 border-sky-600 active:border-b-0 active:translate-y-1 transition-all shadow-md gap-1">
+                                            <RotateCcw size={20} /> やりなおし
+                                        </button>
+                                    </div>
+
+                                    <div className="h-40 flex-shrink-0">
+                                        {feedback && (
+                                            <div className={`h-full p-4 rounded-3xl border-4 flex items-center gap-3 shadow-md ${feedback.type === 'success' ? 'bg-green-100 border-green-300 text-green-800' : feedback.type === 'info' ? 'bg-amber-100 border-amber-300 text-amber-800' : 'bg-rose-100 border-rose-300 text-rose-800'}`}>
+                                                <div className="flex-shrink-0 bg-white p-2 rounded-full shadow-sm">
+                                                    {feedback.type === 'success' ? <CheckCircle size={28} className="text-green-600" /> : feedback.type === 'info' ? <Lightbulb size={28} className="text-amber-500" /> : <XCircle size={28} className="text-rose-500" />}
+                                                </div>
+                                                <div className="flex-1 font-bold text-[15px] md:text-base leading-relaxed">{feedback.message}</div>
+                                                {(feedback.type === 'success') && (
+                                                    <button onClick={handleNextProblem} className="flex-shrink-0 bg-white text-current p-3 rounded-full shadow-md hover:shadow-lg active:scale-95 transition-all">
+                                                        <ArrowRight size={24} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Right Column: レジスター */}
+                                <div className="bg-[#F5F5F5] rounded-3xl p-4 shadow-md flex flex-col h-full border-4 border-[#DDDDDD] relative mt-3">
+                                    <div className="absolute top-[-15px] left-1/2 transform -translate-x-1/2 bg-white px-6 py-1 rounded-full text-sm font-black text-slate-500 border-2 border-[#DDDDDD] shadow-sm z-10">
+                                        レジスター
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3 flex-1 min-h-0 mt-4">
+                                        {COINS.map(val => (
+                                            <button key={val} onClick={() => handleAddCoin(val)} disabled={feedback?.type === 'success'} className="h-full bg-white hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white rounded-2xl flex flex-col items-center justify-center gap-2 transition-all active:scale-95 shadow-sm border-2 border-slate-200 min-h-0 py-2 group">
+                                                <Coin value={val} scaleMultiplier={2.8} />
+                                                <span className="font-bold text-slate-500 text-sm bg-slate-100 px-3 py-1 rounded-full group-hover:bg-slate-200 transition-colors">+{val}えん</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
         }
 
-        function setupCourseAndHintSelector() {
-            const courseSelect = document.getElementById('course-select');
-            const hintSelect = document.getElementById('hint-select');
-
-            courseSelect.addEventListener('change', (e) => {
-                initAudio();
-                currentCourse = e.target.value;
-                setupQuestions();
-                updateDisplay();
-                generateCoins();
-                updateTotalDisplay();
-            });
-
-            hintSelect.addEventListener('change', (e) => {
-                initAudio();
-                hintMode = e.target.value === 'hint-on';
-                updateTotalDisplay();
-            });
-        }
-
-        // アプリケーション初期化
-        function initApp() {
-            setupQuestions();
-            updateDisplay();
-            generateCoins();
-            setupDragAndDrop();
-            setupButtons();
-            setupCourseAndHintSelector();
-        }
-
-        window.addEventListener('DOMContentLoaded', initApp);
-  </script>
- </body>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
 </html>
