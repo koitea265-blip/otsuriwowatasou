@@ -1,0 +1,1567 @@
+<!doctype html>
+<html lang="ja">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ピッタリのお金をわたそう</title>
+  <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 10px;
+            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            background: linear-gradient(135deg, #ffb3e6 0%, #87ceeb 50%, #98fb98 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* 全体の縦スクロールを防止 */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        .container {
+            width: 100%;
+            max-width: 960px;
+            height: calc(100vh - 20px); /* 画面内に収める */
+            background: linear-gradient(135deg, #fff9c4 0%, #ffe4e1 100%);
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 8px 32px rgba(255,105,180,0.3);
+            border: 4px solid #ff69b4;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-sizing: border-box;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 5px;
+            flex-shrink: 0; /* ヘッダーが潰れないように固定 */
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff1493;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(255,182,193,0.5);
+        }
+        .course-selector {
+            margin-bottom: 5px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .course-select {
+            font-size: 13px;
+            padding: 4px 12px;
+            border: 2px solid #ff69b4;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #ffeef8 0%, #e6f3ff 100%);
+            color: #ff1493;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+        }
+        .progress-info {
+            font-size: 13px;
+            color: #ff1493;
+            background: linear-gradient(135deg, #ffe4e1 0%, #e6f3ff 100%);
+            padding: 4px 12px;
+            border-radius: 15px;
+            display: inline-block;
+            font-weight: bold;
+            border: 2px solid #ff69b4;
+        }
+        .instruction {
+            font-size: 14px;
+            color: #444;
+            margin-bottom: 3px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .game-area {
+            display: grid;
+            /* 左（お金をおくトレイ）の横幅を広げ、右（お財布）を縮小してコインが横5枚並ぶスペースを確保 */
+            grid-template-columns: 1.25fr 1.35fr; 
+            gap: 15px;
+            flex-grow: 1;
+            min-height: 0; /* 子要素の高さ制御のために必要 */
+            margin-bottom: 5px;
+        }
+        .product-section {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 0;
+        }
+        .product-card {
+            background: linear-gradient(135deg, #fff0f5 0%, #fffacd 100%);
+            border: 3px solid #ff69b4;
+            border-radius: 15px;
+            padding: 8px;
+            box-shadow: 0 4px 10px rgba(255,105,180,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .product-icon {
+            font-size: 50px;
+            margin-bottom: 2px;
+            filter: drop-shadow(0 3px 4px rgba(0,0,0,0.1));
+            line-height: 1;
+        }
+        .product-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 2px;
+        }
+        .product-price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff1493;
+            background: linear-gradient(135deg, #ffe4e1 0%, #fff0f5 100%);
+            padding: 3px 12px;
+            border-radius: 15px;
+            display: inline-block;
+            border: 2px solid #ff69b4;
+            box-shadow: 0 2px 6px rgba(255,105,180,0.2);
+        }
+        
+        /* 支払いトレイ全体を位置の基準とするためのラッパー */
+        .payment-container {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        /* 支払いエリア全体のレイアウト（枠線をスッキリさせ、スクロールを完全無効化） */
+        .payment-area {
+            width: 100%;
+            height: 100%;
+            border: 3px dashed #ff69b4;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #fff0f5 0%, #f0f8ff 100%);
+            box-sizing: border-box;
+            box-shadow: inset 0 2px 6px rgba(255,105,180,0.15);
+            position: relative;
+            transition: background 0.2s, border-color 0.2s;
+            overflow: hidden; /* 縦スクロールを完全に防ぐ */
+            padding: 8px;
+        }
+        .payment-area.drag-over {
+            border-color: #32cd32;
+            background: linear-gradient(135deg, #f0fff0 0%, #e6ffe6 100%);
+        }
+        
+        /* やさしいコース用レイアウト (縦にきれいに2段並べる) */
+        .payment-area.layout-easy {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            gap: 10px;
+        }
+        
+        /* ふつう・むずかしいコース用レイアウト (横2列 × 縦3段 of グリッドでスクロールを撲滅) */
+        .payment-area.layout-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 6px;
+        }
+
+        /* コイン専用の段（透明な整列領域、高さは親にフィット、余分なマージンをカット） */
+        .payment-lane {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.35); /* ほんのり白くしてコインを置く場所を分かりやすく */
+            border-radius: 10px;
+            padding: 2px 8px;
+            box-sizing: border-box;
+            height: 100%;
+            min-height: 0;
+            position: relative;
+            z-index: 1; /* 各レーンの重なり順の基準 */
+        }
+        
+        /* 置かれたコインが綺麗に【左上から右へ並び、多くなったら2段目に回り込む】フレックス配置 */
+        .lane-coins-container {
+            display: flex;
+            flex-flow: row wrap; /* 横並び、端に到達したら折り返し */
+            gap: 4px;
+            align-items: flex-start;   /* 縦方向は最初から常に上寄せ */
+            align-content: flex-start; /* 複数行になっても上寄せをキープしてブレを撲滅 */
+            justify-content: flex-start; /* 左寄せ */
+            height: 100%;
+            flex-grow: 1;
+            min-width: 0;
+            padding-top: 3px; /* 上部に少しだけ余白を持たせて配置を美しく */
+            box-sizing: border-box;
+        }
+
+        .total-display {
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .total-amount {
+            font-size: 18px;
+            font-weight: bold;
+            color: #4169e1;
+            background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 100%);
+            padding: 6px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            border: 2px solid #87ceeb;
+            box-shadow: 0 2px 6px rgba(135,206,235,0.25);
+        }
+        .coins-section {
+            background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 100%);
+            border: 3px solid #87ceeb;
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 4px 10px rgba(135,206,235,0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 0;
+        }
+        .coins-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #4169e1;
+            text-align: center;
+            margin-bottom: 6px;
+            text-shadow: 1px 1px 2px rgba(135,206,235,0.4);
+            flex-shrink: 0;
+        }
+        .coin-bank {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-grow: 1;
+            justify-content: space-evenly;
+            min-height: 0;
+            overflow: hidden; /* コイン銀行内の不意なはみ出しを防ぐ */
+        }
+        .coin-row {
+            display: flex;
+            gap: 6px;
+            justify-content: space-evenly;
+            align-items: stretch;
+            width: 100%;
+            flex: 1; /* 2本の行が縦幅を等しく分け合う */
+            min-height: 0;
+            overflow: hidden;
+        }
+        .coin-type-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+            height: 100%;
+        }
+        .coin-holder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.45);
+            border-radius: 10px;
+            padding: 4px;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            box-shadow: inset 0 1px 4px rgba(0,0,0,0.08);
+            box-sizing: border-box;
+        }
+        .coin-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #4169e1;
+            margin-bottom: 2px;
+            flex-shrink: 0;
+        }
+        .coin-stack {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 5px;
+            box-sizing: border-box;
+        }
+        /* スクロールバーの非表示 */
+        .coin-stack::-webkit-scrollbar, .payment-area::-webkit-scrollbar {
+            width: 4px;
+        }
+        .coin-stack::-webkit-scrollbar-thumb, .payment-area::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 2px;
+        }
+        .coin {
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.15s, box-shadow 0.15s;
+            border: 3px solid;
+            touch-action: none;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.18);
+            position: relative;
+            flex-shrink: 0;
+        }
+        .coin:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .coin:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+        /* コインサイズ調整（1画面に綺麗に収まる大きさ） */
+        /* 500円玉：新500円玉（バイカラー・クラッド貨幣）の境界をくっきりさせてリアルに再現 */
+        .coin-500 {
+            width: 54px;
+            height: 54px;
+            background: radial-gradient(
+                circle, 
+                #f8f8f8 0%, 
+                #cccccc 68%, /* 銀色部分を広くする */
+                #c19a3b 69%, /* 外側の縁だけを金色にする */
+                #eadd9f 85%, 
+                #b38b22 100%
+            );
+            border: 3px solid #917518;
+            color: #222;
+            font-size: 15px;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.8);
+        }
+        .coin-100 {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #fafafa 0%, #dcdcdc 50%, #b0b0b0 100%);
+            border: 3px solid #888888;
+            color: #444;
+            font-size: 15px;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.6);
+        }
+        
+        /* 50円玉：数字「50」を中央の穴を避けて、コインの最上部に美しく並べます */
+        .coin-50 {
+            width: 44px;
+            height: 44px;
+            background: radial-gradient(
+                circle, 
+                transparent 15%, 
+                #888888 16%, 
+                #fafafa 20%, 
+                #dcdcdc 60%, 
+                #b0b0b0 100%
+            );
+            border: 3px solid #888888;
+            color: #444;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.6);
+            border-radius: 50%;
+            
+            /* 文字の位置を穴のさらに上に引き上げるため padding-top を極小の1pxに調整 */
+            align-items: flex-start !important;
+            padding-top: 1px !important;
+            font-size: 10px !important;
+        }
+        .coin-10 {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #e5a65d 0%, #b87333 50%, #8b4513 100%);
+            border: 3px solid #703d0b;
+            color: #fff;
+            font-size: 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+        }
+        /* 5円玉：数字「5」を中央の穴を避けて、コインの最上部に美しく並べます */
+        .coin-5 {
+            width: 44px;
+            height: 44px;
+            background: radial-gradient(
+                circle, 
+                transparent 15%, 
+                #8c6d0d 16%, 
+                #fae07a 21%, 
+                #d4af37 60%, 
+                #b59015 100%
+            );
+            border: 3px solid #8c6d0d;
+            color: #654321;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.5);
+            border-radius: 50%;
+            
+            /* 文字の位置を穴のさらに上に引き上げるため padding-top を極小の1pxに調整 */
+            align-items: flex-start !important;
+            padding-top: 1px !important;
+            font-size: 11px !important;
+        }
+        .coin-1 {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 50%, #c0c0c0 100%);
+            border: 3px solid #a0a0a0;
+            color: #555;
+            font-size: 13px;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.6);
+        }
+        
+        /* 置かれたコインの特別スタイル (コインの大きさは元のクラスのまま100%維持) */
+        /* z-index と relative を使って、はみ出しても他の段の背景の下に隠れない（色が薄くならない）ように設定 */
+        .coin-placed {
+            margin: 2px !important;
+            cursor: pointer;
+            position: relative !important;
+            z-index: 100 !important; /* 確実に最前面に出るように数値を引き上げ */
+            display: inline-flex !important;
+            transform: none !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
+        }
+        
+        .coin-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid rgba(135,206,235,0.25);
+            flex-shrink: 0; /*絶対に潰れない・はみ出さないように保護 */
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .btn-check {
+            background: linear-gradient(135deg, #32cd32 0%, #98fb98 100%);
+            color: white;
+            border: 2px solid #228b22;
+            box-shadow: 0 3px 8px rgba(50,205,50,0.25);
+        }
+        .btn-check:hover {
+            background: linear-gradient(135deg, #228b22 0%, #90ee90 100%);
+            transform: translateY(-1px);
+        }
+        .btn-reset {
+            background: linear-gradient(135deg, #ff69b4 0%, #ffb6c1 100%);
+            color: white;
+            border: 2px solid #ff1493;
+            box-shadow: 0 3px 8px rgba(255,105,180,0.25);
+        }
+        .btn-reset:hover {
+            background: linear-gradient(135deg, #ff1493 0%, #ffc0cb 100%);
+            transform: translateY(-1px);
+        }
+        .btn-next {
+            background: linear-gradient(135deg, #00bfff 0%, #add8e6 100%);
+            color: white;
+            border: 2px solid #0000ff;
+            box-shadow: 0 3px 8px rgba(30,144,255,0.25);
+            display: none; /* JavaScriptの変更に伴い、これは非表示のままにします */
+        }
+        .btn-next:hover {
+            background: linear-gradient(135deg, #0000ff 0%, #87ceeb 100%);
+            transform: translateY(-1px);
+        }
+
+        /* 次のもんだいへボタンのゆっくり優しく目立つパルス点滅アニメーション（みどり色） */
+        @keyframes pulse-blink-green {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 4px 12px rgba(50, 205, 50, 0.35);
+            }
+            50% {
+                transform: scale(1.06);
+                box-shadow: 0 8px 20px rgba(50, 205, 50, 0.75);
+                background: linear-gradient(135deg, #32cd32 0%, #228b22 100%);
+            }
+        }
+        .message.success .btn-understand.btn-blink {
+            animation: pulse-blink-green 1.2s infinite ease-in-out;
+        }
+
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            text-align: center;
+            padding: 22px 30px;
+            border-radius: 15px;
+            display: none;
+            max-width: 80%;
+            box-sizing: border-box;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            animation: popupFadeIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .message-text-area {
+            font-size: 18px;
+            font-weight: bold;
+            white-space: pre-line; /* 改行を有効にする */
+            line-height: 1.5;
+        }
+        
+        /* 閉じるための可愛い「わかった」ボタン */
+        .btn-understand {
+            background: linear-gradient(135deg, #ff69b4 0%, #ffb6c1 100%);
+            color: white;
+            border: 2px solid #ff1493;
+            box-shadow: 0 3px 8px rgba(255,105,180,0.25);
+            margin-top: 5px;
+            padding: 8px 24px;
+            border-radius: 18px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .btn-understand:hover {
+            background: linear-gradient(135deg, #ff1493 0%, #ffc0cb 100%);
+            transform: translateY(-1px);
+        }
+
+        .message.success {
+            background: linear-gradient(135deg, #f0fff0 0%, #e6ffe6 100%);
+            color: #228b22;
+            border: 3px solid #32cd32;
+        }
+        /* 正解のときはボタンもみどり系に変える */
+        .message.success .btn-understand {
+            background: linear-gradient(135deg, #32cd32 0%, #98fb98 100%);
+            border: 2px solid #228b22;
+            box-shadow: 0 3px 8px rgba(50, 205, 50, 0.25);
+        }
+        .message.success .btn-understand:hover {
+            background: linear-gradient(135deg, #228b22 0%, #90ee90 100%);
+        }
+
+        .message.error {
+            background: linear-gradient(135deg, #fff0f5 0%, #ffe4e1 100%);
+            color: #ff1493;
+            border: 3px solid #ff69b4;
+        }
+        
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 999;
+            display: none;
+        }
+        @keyframes popupFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.85);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        .dragging {
+            opacity: 0.4;
+            transform: scale(0.9);
+        }
+        .creator-credit {
+            position: fixed;
+            bottom: 5px;
+            right: 10px;
+            z-index: 1001;
+        }
+        .credit-text {
+            font-size: 10px;
+            color: rgba(0,0,0,0.5);
+            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+        }
+        
+        .touch-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.85;
+            transform: translate(-50%, -50%);
+            transition: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            .container {
+                height: calc(100vh - 10px);
+                padding: 10px;
+                border-width: 3px;
+                border-radius: 15px;
+            }
+            .title {
+                font-size: 18px;
+                margin-bottom: 2px;
+            }
+            .course-select, .progress-info {
+                font-size: 11px;
+                padding: 3px 8px;
+            }
+            .instruction {
+                font-size: 11px;
+                margin-bottom: 3px;
+            }
+            .game-area {
+                grid-template-columns: 1fr;
+                /* スマホ時の縦分割を 42:58 に固定し、画面の縦崩れを物理的に防ぐ */
+                grid-template-rows: 42fr 58fr; 
+                gap: 6px;
+                min-height: 0;
+                height: 100%;
+            }
+            .product-section {
+                gap: 4px;
+                height: 100%;
+            }
+            .product-card {
+                flex-direction: row;
+                justify-content: space-evenly;
+                align-items: center;
+                padding: 4px;
+            }
+            .product-icon {
+                font-size: 32px;
+            }
+            .product-name {
+                font-size: 12px;
+            }
+            .product-price {
+                font-size: 14px;
+                padding: 2px 8px;
+            }
+            .payment-area {
+                min-height: 50px;
+                padding: 4px;
+                gap: 4px;
+            }
+            .payment-lane {
+                min-height: 38px;
+                padding: 1px 2px;
+            }
+            .total-amount {
+                font-size: 14px;
+                padding: 3px 10px;
+            }
+            .coins-section {
+                padding: 6px;
+                height: 100%;
+            }
+            .coins-title {
+                font-size: 11px;
+                margin-bottom: 4px;
+            }
+            .coin-holder {
+                padding: 2px;
+            }
+            .coin-label {
+                font-size: 9px;
+            }
+            .coin-500 { width: 36px; height: 36px; font-size: 10px; border-width: 2px;}
+            .coin-100 { width: 32px; height: 32px; font-size: 10px; border-width: 2px;}
+            
+            /* 50円・5円スマホ表示用の余白調整 */
+            .coin-50 {
+                padding-top: 1px !important;
+                font-size: 8px !important;
+            }
+            .coin-5 {
+                padding-top: 1px !important;
+                font-size: 9px !important;
+            }
+            
+            .coin-10 { width: 34px; height: 34px; font-size: 10px; border-width: 2px;}
+            .coin-1 { width: 26px; height: 26px; font-size: 8px; border-width: 2px;}
+            
+            /* スマホ時の置かれたコインサイズもスマホお財布サイズをそのまま維持 */
+            .coin-placed {
+                margin: 2px !important;
+            }
+
+            .coin-controls {
+                margin-top: 4px;
+                padding-top: 4px;
+                gap: 6px;
+            }
+            .btn {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+        }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <main class="container">
+   <header class="header">
+    <h1 class="title" id="app-title">ピッタリのお金をわたそう</h1>
+    <div class="course-selector">
+     <select class="course-select" id="course-select">
+      <option value="easy">やさしい (100円・10円のみ)</option>
+      <option value="normal">ふつう (500円まで・1円単位)</option>
+      <option value="hard">むずかしい (1000円まで・1円単位)</option>
+     </select>
+     <select class="course-select" id="hint-select">
+      <option value="hint-on">ヒントあり（ごうけいがでます）</option>
+      <option value="hint-off">ヒントなし</option>
+     </select>
+     <div class="progress-info" id="progress-info">
+      問題 1/5 (正解数: 0)
+     </div>
+    </div>
+    <p class="instruction" id="instruction-text">しょうひんと同じきんがくになるように、お金をいどうしてください</p>
+   </header>
+   
+   <div class="game-area">
+    <!-- 左側：商品情報 ＆ お金をおくエリア -->
+    <div class="product-section">
+     <div class="product-card">
+      <div class="product-icon" id="product-icon">🍎</div>
+      <div>
+        <div class="product-name" id="product-name">りんご</div>
+        <div class="product-price" id="product-price">120円</div>
+      </div>
+     </div>
+     
+     <!-- トレイとメッセージが同一の基準になるよう payment-container で包みます -->
+     <div class="payment-container">
+         <!-- 支払いトレイ：内部に見えない透明な段（レーン）が自動的に作成されます -->
+         <div class="payment-area" id="payment-area">
+           <!-- コースごとに動的にレーンを生成します -->
+         </div>
+         
+         <!-- プレースホルダー（トレイの完全真ん中に美しくかぶせるメッセージ） -->
+         <p id="payment-placeholder" style="color: #888; font-size: 12px; text-align: center; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; width: 90%; line-height: 1.4; z-index: 10; display: none;">
+           ここにお金をいどうしてね！<br>(タップするだけでもいどうできるよ)
+         </p>
+     </div>
+     
+     <div class="total-display">
+      <div class="total-amount" id="total-amount">合計: 0円</div>
+     </div>
+    </div>
+    
+    <!-- 右側：お財布（硬貨置き場） -->
+    <div class="coins-section">
+     <div class="coins-title">おさいふ（タップかドラッグでいどう）</div>
+     <div class="coin-bank" id="coin-bank">
+       <!-- 硬貨はここに動的に生成されます -->
+     </div>
+     
+     <div class="coin-controls">
+      <button class="btn btn-check" id="check-btn">答えをかくにん</button>
+      <button class="btn btn-reset" id="reset-btn">やりなおし</button>
+      <button class="btn btn-next" id="next-btn" style="display: none !important;">次のもんだい</button>
+     </div>
+    </div>
+   </div>
+   
+   <!-- メッセージエリアの中に「メッセージ本文エリア」と「わかったボタン」を実装します -->
+   <div class="message" id="message">
+       <div class="message-text-area" id="message-text"></div>
+       <button class="btn-understand" id="understand-btn">わかった</button>
+   </div>
+  </main>
+  
+  <div class="popup-overlay" id="popup-overlay"></div>
+  
+  <footer class="creator-credit">
+    <span class="credit-text">©2026　ピッタリのお金をわたそう　ＩＣＴ支援の杜</span>
+  </footer>
+
+  <script>
+        // 設定
+        const config = {
+            success_messages: [
+                "正解です！よくできました！🌟",
+                "大せいかい！かんぺきです！おみごと！👏",
+                "ぴったり！すごい！天才だね！🎉",
+                "おめでとう！あっていたよ！🌈"
+            ],
+            try_again_message: "ざんねん！もう一度チャレンジしてみよう！💪"
+        };
+
+        // 商品データ（コース別）- 各コース20個、値段はランダム
+        const productTemplates = {
+            easy: [
+                { icon: "🍎", name: "りんご", minPrice: 30, maxPrice: 150 },
+                { icon: "🍌", name: "バナナ", minPrice: 50, maxPrice: 120 },
+                { icon: "🥕", name: "にんじん", minPrice: 40, maxPrice: 100 },
+                { icon: "🍊", name: "みかん", minPrice: 30, maxPrice: 90 },
+                { icon: "🍅", name: "トマト", minPrice: 60, maxPrice: 140 },
+                { icon: "🍪", name: "クッキー", minPrice: 70, maxPrice: 150 },
+                { icon: "🍭", name: "キャンディー", minPrice: 20, maxPrice: 80 },
+                { icon: "🍫", name: "チョコレート", minPrice: 80, maxPrice: 180 },
+                { icon: "🍩", name: "ドーナツ", minPrice: 90, maxPrice: 190 },
+                { icon: "🧁", name: "カップケーキ", minPrice: 110, maxPrice: 200 },
+                { icon: "✏️", name: "えんぴつ", minPrice: 40, maxPrice: 90 },
+                { icon: "📝", name: "ノート", minPrice: 80, maxPrice: 150 },
+                { icon: "✂️", name: "はさみ", minPrice: 120, maxPrice: 200 },
+                { icon: "📏", name: "じょうぎ", minPrice: 70, maxPrice: 130 },
+                { icon: "🖍️", name: "クレヨン", minPrice: 100, maxPrice: 180 },
+                { icon: "🧦", name: "くつした", minPrice: 110, maxPrice: 190 },
+                { icon: "🎀", name: "リボン", minPrice: 50, maxPrice: 120 },
+                { icon: "🧢", name: "ぼうし", minPrice: 150, maxPrice: 200 },
+                { icon: "🧤", name: "てぶくろ", minPrice: 120, maxPrice: 180 },
+                { icon: "🎈", name: "ふうせん", minPrice: 30, maxPrice: 90 }
+            ],
+            normal: [
+                { icon: "🥬", name: "キャベツ", minPrice: 102, maxPrice: 298 },
+                { icon: "🥛", name: "牛乳", minPrice: 112, maxPrice: 248 },
+                { icon: "🍞", name: "食パン", minPrice: 105, maxPrice: 198 },
+                { icon: "🥚", name: "たまご", minPrice: 156, maxPrice: 298 },
+                { icon: "🧀", name: "チーズ", minPrice: 204, maxPrice: 398 },
+                { icon: "🍰", name: "ショートケーキ", minPrice: 305, maxPrice: 485 },
+                { icon: "🍦", name: "ソフトクリーム", minPrice: 155, maxPrice: 285 },
+                { icon: "🥧", name: "アップルパイ", minPrice: 255, maxPrice: 395 },
+                { icon: "🍮", name: "プリン", minPrice: 102, maxPrice: 198 },
+                { icon: "🧃", name: "ジュース", minPrice: 82, maxPrice: 168 },
+                { icon: "📚", name: "えほん", minPrice: 302, maxPrice: 498 },
+                { icon: "🎨", name: "えのぐ", minPrice: 255, maxPrice: 448 },
+                { icon: "📐", name: "さんかくじょうぎ", minPrice: 125, maxPrice: 278 },
+                { icon: "🖊️", name: "ボールペン", minPrice: 82, maxPrice: 228 },
+                { icon: "📒", name: "れんらくちょう", minPrice: 122, maxPrice: 318 },
+                { icon: "🧴", name: "ハンドソープ", minPrice: 205, maxPrice: 398 },
+                { icon: "🧽", name: "スポンジ", minPrice: 82, maxPrice: 178 },
+                { icon: "🕯️", name: "アロマキャンドル", minPrice: 155, maxPrice: 288 },
+                { icon: "🎁", name: "プレゼントバッグ", minPrice: 305, maxPrice: 498 },
+                { icon: "🌸", name: "おはな", minPrice: 155, maxPrice: 398 }
+            ],
+            hard: [
+                { icon: "🍜", name: "ラーメン", minPrice: 502, maxPrice: 898 },
+                { icon: "🍱", name: "おべんとう", minPrice: 455, maxPrice: 798 },
+                { icon: "🍕", name: "ピザ", minPrice: 655, maxPrice: 998 },
+                { icon: "🍔", name: "ハンバーガーセット", minPrice: 405, maxPrice: 798 },
+                { icon: "🍣", name: "にぎりずし", minPrice: 705, maxPrice: 998 },
+                { icon: "🎂", name: "デコレーションケーキ", minPrice: 755, maxPrice: 998 },
+                { icon: "🍬", name: "おかしつめあわせ", minPrice: 355, maxPrice: 798 },
+                { icon: "🧊", name: "かき氷", minPrice: 325, maxPrice: 698 },
+                { icon: "🥮", name: "わがしセット", minPrice: 455, maxPrice: 798 },
+                { icon: "🍯", name: "はちみつボトル", minPrice: 505, maxPrice: 898 },
+                { icon: "🧸", name: "くまのぬいぐるみ", minPrice: 455, maxPrice: 898 },
+                { icon: "🎮", name: "レトロゲーム機", minPrice: 705, maxPrice: 998 },
+                { icon: "🪀", name: "木のおもちゃ", minPrice: 355, maxPrice: 698 },
+                { icon: "🎲", name: "ボードゲーム", minPrice: 555, maxPrice: 898 },
+                { icon: "🎸", name: "おもちゃのウクレレ", minPrice: 755, maxPrice: 998 },
+                { icon: "📓", name: "じゆうちょう5冊組", minPrice: 405, maxPrice: 798 },
+                { icon: "✏️", name: "えんぴつけずり機", minPrice: 505, maxPrice: 898 },
+                { icon: "📐", name: "ぶんぼうぐデラックス", minPrice: 655, maxPrice: 998 },
+                { icon: "🖍️", name: "いろえんぴつ24色", minPrice: 505, maxPrice: 898 },
+                { icon: "🎨", name: "本格絵のぐセット", minPrice: 655, maxPrice: 998 }
+            ]
+        };
+
+        // コースと状態
+        let currentCourse = 'easy';
+        let currentQuestionIndex = 0;
+        let correctAnswers = 0;
+        let selectedQuestions = [];
+        let currentProduct = null;
+        let hintMode = true;
+        let totalPlacedAmount = 0;
+
+        // 音声効果音（シンセサイザー）
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return;
+            
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const now = audioCtx.currentTime;
+            
+            if (type === 'coin') {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'triangle'; // 三角波
+                osc.frequency.setValueAtTime(130, now); // 超低音
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.12);
+                
+                gain.gain.setValueAtTime(0.95, now); // ゲインを引き上げて聞き取りやすく
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                
+                osc.start(now);
+                osc.stop(now + 0.12);
+            } 
+            else if (type === 'success') {
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    
+                    gain.gain.setValueAtTime(0.08, now + idx * 0.1); // 置く音と音量感を合わせるため、少しゲインをマイルドに
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.25);
+                    
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.25);
+                });
+            } 
+            else if (type === 'fail') {
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                const gain2 = audioCtx.createGain();
+                
+                osc1.connect(gain1); gain1.connect(audioCtx.destination);
+                osc2.connect(gain2); gain2.connect(audioCtx.destination);
+                
+                osc1.type = 'sawtooth';
+                osc2.type = 'sawtooth';
+                
+                osc1.frequency.setValueAtTime(180, now);
+                osc2.frequency.setValueAtTime(185, now);
+                
+                gain1.gain.setValueAtTime(0.12, now);
+                gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                gain2.gain.setValueAtTime(0.12, now);
+                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                
+                osc1.start(now); osc1.stop(now + 0.4);
+                osc2.start(now); osc2.stop(now + 0.4);
+            }
+            else if (type === 'perfect') {
+                const fanfare = [523.25, 659.25, 783.99, 1046.50, 1046.50];
+                const durations = [0.15, 0.15, 0.15, 0.3, 0.5];
+                let timeAccum = 0;
+                fanfare.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + timeAccum);
+                    gain.gain.setValueAtTime(0.15, now + timeAccum);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + timeAccum + durations[idx]);
+                    osc.start(now + timeAccum);
+                    osc.stop(now + timeAccum + durations[idx]);
+                    timeAccum += durations[idx] - 0.02;
+                });
+            }
+        }
+
+        function generateRandomPrice(min, max, course) {
+            if (course === 'easy') {
+                const roundedMin = Math.ceil(min / 10);
+                const roundedMax = Math.floor(max / 10);
+                return (Math.floor(Math.random() * (roundedMax - roundedMin + 1)) + roundedMin) * 10;
+            } else {
+                let price;
+                do {
+                    price = Math.floor(Math.random() * (max - min + 1)) + min;
+                } while (price % 10 === 0);
+                return price;
+            }
+        }
+
+        function setupQuestions() {
+            const templates = productTemplates[currentCourse];
+            const shuffled = [...templates].sort(() => Math.random() - 0.5);
+            selectedQuestions = shuffled.slice(0, 5).map(item => {
+                return {
+                    icon: item.icon,
+                    name: item.name,
+                    price: generateRandomPrice(item.minPrice, item.maxPrice, currentCourse)
+                };
+            });
+            currentQuestionIndex = 0;
+            correctAnswers = 0;
+            currentProduct = selectedQuestions[currentQuestionIndex];
+        }
+
+        // お財布の中身と合計表示の更新
+        function updateDisplay() {
+            document.getElementById('progress-info').textContent = `問題 ${currentQuestionIndex + 1}/5 (せいかい: ${correctAnswers})`;
+            
+            document.getElementById('product-icon').textContent = currentProduct.icon;
+            document.getElementById('product-name').textContent = currentProduct.name;
+            document.getElementById('product-price').textContent = `${currentProduct.price}円`;
+
+            updateTotalDisplay();
+
+            document.getElementById('check-btn').style.display = 'inline-block';
+        }
+
+        function updateTotalDisplay() {
+            const coinsInPayment = document.getElementById('payment-area').querySelectorAll('.coin');
+            let sum = 0;
+            coinsInPayment.forEach(coin => {
+                sum += parseInt(coin.getAttribute('data-value'), 10);
+            });
+            totalPlacedAmount = sum;
+
+            // プレースホルダーの表示制御
+            const placeholder = document.getElementById('payment-placeholder');
+            if (coinsInPayment.length > 0) {
+                placeholder.style.display = 'none';
+            } else {
+                placeholder.style.display = 'block';
+            }
+
+            const totalDisplayEl = document.getElementById('total-amount');
+            if (hintMode) {
+                totalDisplayEl.textContent = `合計: ${totalPlacedAmount}円`;
+                totalDisplayEl.style.visibility = 'visible';
+            } else {
+                totalDisplayEl.textContent = `合計: ？？？円`;
+            }
+        }
+
+        // コースに合わせたお支払いトレイ（payment-area）の段分けレーンを動的生成する
+        // ※明確な枠線やラベルテキストは無くし、完全に透明な整列段にします。
+        function setupPaymentLanes() {
+            const paymentArea = document.getElementById('payment-area');
+            paymentArea.innerHTML = ''; // クリア
+
+            let values = [];
+            if (currentCourse === 'easy') {
+                // やさしいコースは縦に2段並びにする
+                paymentArea.className = 'payment-area layout-easy';
+                values = [100, 10];
+            } else {
+                // ふつう・むずかしいコースはグリッド化 (横2列 × 縦3段)
+                // 1列目(左): 500, 100, 50 | 2列目(右): 10, 5, 1 になるように交互に配置
+                paymentArea.className = 'payment-area layout-grid';
+                values = [500, 10, 100, 5, 50, 1];
+            }
+
+            // 各硬貨専用 of 透明な段を構築
+            values.forEach(val => {
+                const lane = document.createElement('div');
+                lane.className = 'payment-lane';
+                lane.setAttribute('data-target-value', val);
+
+                const coinsContainer = document.createElement('div');
+                coinsContainer.className = 'lane-coins-container';
+                coinsContainer.id = `lane-coins-${val}`;
+
+                lane.appendChild(coinsContainer);
+                paymentArea.appendChild(lane);
+            });
+        }
+
+        function generateCoins() {
+            // 先にお支払いトレイ of 段を整理
+            setupPaymentLanes();
+
+            const bank = document.getElementById('coin-bank');
+            bank.innerHTML = '';
+
+            // お財布の水平行(row1, row2)に分離して作成
+            const row1 = document.createElement('div');
+            row1.className = 'coin-row';
+            const row2 = document.createElement('div');
+            row2.className = 'coin-row';
+
+            let coinSpecs = [];
+            if (currentCourse === 'easy') {
+                coinSpecs = [
+                    { value: 100, class: 'coin-100', count: 10, targetRow: row1, cols: 5 },
+                    { value: 10, class: 'coin-10', count: 10, targetRow: row2, cols: 5 }
+                ];
+            } else if (currentCourse === 'normal') {
+                // ふつう: おさいふ枚数設定（ご要望に応じた枚数）
+                coinSpecs = [
+                    { value: 500, class: 'coin-500', count: 1, targetRow: row1, cols: 2 },
+                    { value: 100, class: 'coin-100', count: 9, targetRow: row1, cols: 3 }, // 5枚から9枚へ、列数を3に
+                    { value: 50, class: 'coin-50', count: 2, targetRow: row1, cols: 2 },
+                    { value: 10, class: 'coin-10', count: 9, targetRow: row2, cols: 3 }, // 5枚から9枚へ、列数を3に
+                    { value: 5, class: 'coin-5', count: 2, targetRow: row2, cols: 2 },
+                    { value: 1, class: 'coin-1', count: 9, targetRow: row2, cols: 3 }  // 5枚から9枚へ、列数を3に
+                ];
+            } else {
+                coinSpecs = [
+                    { value: 500, class: 'coin-500', count: 2, targetRow: row1, cols: 3 },
+                    { value: 100, class: 'coin-100', count: 9, targetRow: row1, cols: 3 },
+                    { value: 50, class: 'coin-50', count: 2, targetRow: row1, cols: 3 },
+                    { value: 10, class: 'coin-10', count: 9, targetRow: row2, cols: 3 },
+                    { value: 5, class: 'coin-5', count: 2, targetRow: row2, cols: 3 },
+                    { value: 1, class: 'coin-1', count: 9, targetRow: row2, cols: 3 }
+                ];
+            }
+
+            coinSpecs.forEach(spec => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'coin-type-wrapper';
+
+                const label = document.createElement('div');
+                label.className = 'coin-label';
+                label.textContent = `${spec.value}円`;
+                wrapper.appendChild(label);
+
+                const holder = document.createElement('div');
+                holder.className = 'coin-holder';
+                
+                const stack = document.createElement('div');
+                stack.className = 'coin-stack';
+                stack.id = `stack-${spec.value}`;
+                
+                stack.style.display = 'grid';
+                stack.style.gridTemplateColumns = `repeat(${spec.cols}, 1fr)`;
+                stack.style.gap = '4px';
+                stack.style.justifyItems = 'center';
+                stack.style.alignContent = 'start';
+
+                for (let i = 0; i < spec.count; i++) {
+                    const coinEl = document.createElement('div');
+                    coinEl.className = `coin ${spec.class}`;
+                    // すべての硬貨（50円や5円を含む）に数字を正しく表示する
+                    coinEl.textContent = spec.value;
+                    coinEl.setAttribute('data-value', spec.value);
+                    coinEl.setAttribute('draggable', 'true');
+                    coinEl.id = `coin-${spec.value}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    bindCoinEvents(coinEl);
+                    stack.appendChild(coinEl);
+                }
+
+                holder.appendChild(stack);
+                wrapper.appendChild(holder);
+                spec.targetRow.appendChild(wrapper);
+            });
+
+            bank.appendChild(row1);
+            bank.appendChild(row2);
+        }
+
+        function bindCoinEvents(coin) {
+            coin.addEventListener('click', () => {
+                toggleCoinLocation(coin);
+            });
+
+            coin.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', coin.id);
+                coin.classList.add('dragging');
+                initAudio();
+            });
+
+            coin.addEventListener('dragend', () => {
+                coin.classList.remove('dragging');
+            });
+
+            coin.addEventListener('touchstart', handleTouchStart, { passive: false });
+            coin.addEventListener('touchmove', handleTouchMove, { passive: false });
+            coin.addEventListener('touchend', handleTouchEnd, { passive: false });
+        }
+
+        // コインの移動切り替え（お財布 ↔ 支払いトレイの各段）
+        function toggleCoinLocation(coin) {
+            const val = coin.getAttribute('data-value');
+            const parent = coin.parentElement;
+
+            if (parent.classList.contains('lane-coins-container')) {
+                // 支払いトレイにある場合はおさいふの元の額面スタックへ戻す
+                const originalStack = document.getElementById('stack-' + val);
+                if (originalStack) {
+                    coin.classList.remove('coin-placed');
+                    originalStack.appendChild(coin);
+                } else {
+                    coin.remove();
+                }
+            } else {
+                // おさいふにある場合は、対応する額面の支払いレーン（段）へ移動
+                const targetContainer = document.getElementById('lane-coins-' + val);
+                if (targetContainer) {
+                    coin.classList.add('coin-placed');
+                    targetContainer.appendChild(coin);
+                }
+            }
+            playSound('coin');
+            updateTotalDisplay();
+        }
+
+        let touchActiveElement = null;
+        let ghostElement = null;
+        let touchOffsetX = 0;
+        let touchOffsetY = 0;
+
+        function handleTouchStart(e) {
+            initAudio();
+            const touch = e.touches[0];
+            touchActiveElement = this;
+            
+            const rect = touchActiveElement.getBoundingClientRect();
+            touchOffsetX = touch.clientX - rect.left;
+            touchOffsetY = touch.clientY - rect.top;
+
+            ghostElement = touchActiveElement.cloneNode(true);
+            ghostElement.classList.add('touch-ghost');
+            ghostElement.style.width = rect.width + 'px';
+            ghostElement.style.height = rect.height + 'px';
+            ghostElement.style.top = touch.clientY + 'px';
+            ghostElement.style.left = touch.clientX + 'px';
+            document.body.appendChild(ghostElement);
+
+            touchActiveElement.classList.add('dragging');
+            e.preventDefault();
+        }
+
+        function handleTouchMove(e) {
+            if (!ghostElement) return;
+            const touch = e.touches[0];
+            ghostElement.style.top = touch.clientY + 'px';
+            ghostElement.style.left = touch.clientX + 'px';
+
+            const paymentArea = document.getElementById('payment-area');
+            const payRect = paymentArea.getBoundingClientRect();
+            if (touch.clientX >= payRect.left && touch.clientX <= payRect.right &&
+                touch.clientY >= payRect.top && touch.clientY <= payRect.bottom) {
+                paymentArea.classList.add('drag-over');
+            } else {
+                paymentArea.classList.remove('drag-over');
+            }
+            e.preventDefault();
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchActiveElement) return;
+            
+            const touch = e.changedTouches[0];
+            const paymentArea = document.getElementById('payment-area');
+            const payRect = paymentArea.getBoundingClientRect();
+            
+            paymentArea.classList.remove('drag-over');
+
+            if (touch.clientX >= payRect.left && touch.clientX <= payRect.right &&
+                touch.clientY >= payRect.top && touch.clientY <= payRect.bottom) {
+                // 支払いエリアにドロップされたら、コインに対応する専用レーンへ移動
+                const val = touchActiveElement.getAttribute('data-value');
+                const targetContainer = document.getElementById('lane-coins-' + val);
+                
+                if (targetContainer && touchActiveElement.parentElement !== targetContainer) {
+                    touchActiveElement.classList.add('coin-placed');
+                    targetContainer.appendChild(touchActiveElement);
+                    playSound('coin');
+                }
+            } else {
+                // 支払いエリアの外に放り投げられた場合、お財布に戻す
+                if (touchActiveElement.parentElement.classList.contains('lane-coins-container')) {
+                    const val = touchActiveElement.getAttribute('data-value');
+                    const originalStack = document.getElementById('stack-' + val);
+                    if (originalStack) {
+                        touchActiveElement.classList.remove('coin-placed');
+                        originalStack.appendChild(touchActiveElement);
+                        playSound('coin');
+                    }
+                }
+            }
+
+            if (ghostElement) {
+                ghostElement.remove();
+                ghostElement = null;
+            }
+            touchActiveElement.classList.remove('dragging');
+            touchActiveElement = null;
+            
+            updateTotalDisplay();
+            e.preventDefault();
+        }
+
+        function setupDragAndDrop() {
+            const paymentArea = document.getElementById('payment-area');
+
+            paymentArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                paymentArea.classList.add('drag-over');
+            });
+
+            paymentArea.addEventListener('dragleave', () => {
+                paymentArea.classList.remove('drag-over');
+            });
+
+            paymentArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                paymentArea.classList.remove('drag-over');
+                
+                const id = e.dataTransfer.getData('text/plain');
+                const coin = document.getElementById(id);
+                if (coin) {
+                    const val = coin.getAttribute('data-value');
+                    const targetContainer = document.getElementById('lane-coins-' + val);
+                    
+                    if (targetContainer && coin.parentElement !== targetContainer) {
+                        coin.classList.add('coin-placed');
+                        targetContainer.appendChild(coin);
+                        playSound('coin');
+                    }
+                    updateTotalDisplay();
+                }
+            });
+
+            const coinBank = document.getElementById('coin-bank');
+            coinBank.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            coinBank.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const id = e.dataTransfer.getData('text/plain');
+                const coin = document.getElementById(id);
+                if (coin && coin.parentElement.classList.contains('lane-coins-container')) {
+                    const val = coin.getAttribute('data-value');
+                    const originalStack = document.getElementById('stack-' + val);
+                    if (originalStack) {
+                        coin.classList.remove('coin-placed');
+                        originalStack.appendChild(coin);
+                        playSound('coin');
+                    }
+                    updateTotalDisplay();
+                }
+            });
+        }
+
+        // モーダルを表示する（自動消去を完全廃止し、「わかった（つぎのもんだいへ）」ボタンで閉じる）
+        function showMessage(text, isSuccess, isGameOver = false) {
+            const messageDiv = document.getElementById('message');
+            const messageTextArea = document.getElementById('message-text');
+            const overlay = document.getElementById('popup-overlay');
+            const understandBtn = document.getElementById('understand-btn');
+            
+            messageTextArea.textContent = text;
+            messageDiv.className = 'message ' + (isSuccess ? 'success' : 'error');
+            
+            messageDiv.style.display = 'flex';
+            overlay.style.display = 'block';
+
+            if (isSuccess) {
+                playSound('success');
+                if (isGameOver) {
+                    understandBtn.textContent = "さいしょからあそぶ";
+                    understandBtn.className = "btn-understand btn-blink"; // 最後の結果発表は「あそぶ」点滅
+                    understandBtn.onclick = () => {
+                        hideMessage();
+                        restartGame();
+                    };
+                } else {
+                    // 正解のアドバイスモーダル内に直接「つぎのもんだいへ」ボタンを表示します！
+                    understandBtn.textContent = "つぎのもんだいへ";
+                    understandBtn.className = "btn-understand btn-blink"; // 次の問題誘導点滅をモーダル内にセット
+                    understandBtn.onclick = () => {
+                        hideMessage();
+                        goToNextQuestion();
+                    };
+                }
+            } else {
+                playSound('fail');
+                understandBtn.textContent = "もういちど やる";
+                understandBtn.className = "btn-understand";
+                understandBtn.onclick = hideMessage;
+            }
+            
+            // 誤タップ防止：オーバーレイやダイアログの周りを触っても閉じず、
+            // 「わかった（つぎのもんだいへ）」ボタンのクリックでのみ確実に閉じるように設定
+            overlay.onclick = null;
+        }
+
+        function hideMessage() {
+            document.getElementById('message').style.display = 'none';
+            document.getElementById('popup-overlay').style.display = 'none';
+        }
+
+        // 支払い方法に効率化できる組み合わせ（アドバイス）がないか確認する関数
+        function checkCoinCombinations() {
+            const coinsInPayment = document.getElementById('payment-area').querySelectorAll('.coin');
+            
+            // 各硬貨の枚数をカウントする
+            const counts = {
+                1: 0,
+                5: 0,
+                10: 0,
+                50: 0,
+                100: 0,
+                500: 0
+            };
+            
+            coinsInPayment.forEach(coin => {
+                const val = parseInt(coin.getAttribute('data-value'), 10);
+                if (counts[val] !== undefined) {
+                    counts[val]++;
+                }
+            });
+            
+            let advice = "";
+            
+            // 「やさしい」コース以外の場合のみ、50円、5円、500円へのまとめアドバイスを表示します。
+            if (currentCourse !== 'easy') {
+                if (counts[10] >= 5) {
+                    advice += "\n🪙 10円玉が5枚あるね！\n50円玉1枚にまとめてはらうこともできるよ！";
+                }
+                if (counts[1] >= 5) {
+                    advice += "\n🪙 1円玉が5枚あるね！\n5円玉1枚にまとめてはらうこともできるよ！";
+                }
+                if (counts[100] >= 5) {
+                    advice += "\n🪙 100円玉が5枚あるね！\n500円玉1枚にまとめてはらうこともできるよ！";
+                }
+                if (counts[50] >= 2) {
+                    advice += "\n🪙 50円玉が2枚あるね！\n100円玉1枚にまとめてはらうこともできるよ！";
+                }
+                if (counts[5] >= 2) {
+                    advice += "\n🪙 5円玉が2枚あるね！\n10円玉1枚にまとめてはらうこともできるよ！";
+                }
+            }
+            
+            return advice;
+        }
+
+        // 次の問題に進む処理の共通化
+        function goToNextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < 5) {
+                currentProduct = selectedQuestions[currentQuestionIndex];
+                updateDisplay();
+                generateCoins();
+                updateTotalDisplay();
+            } else {
+                // 5問終了、結果発表
+                let finalMsg = '【結果発表】\n5問中、' + correctAnswers + '問 正解できました！';
+                if (correctAnswers === 5) {
+                    finalMsg += "\nぜんぶ大せいかい！お買い物マスターだね！👑";
+                    playSound('perfect');
+                } else {
+                    finalMsg += "\nつぎはパーフェクトをめざしてがんばろう！🌟";
+                    playSound('success');
+                }
+                showMessage(finalMsg, true, true); // gameoverフラグを立ててお祝い
+            }
+        }
+
+        // ゲームリセット・再スタート処理の共通化
+        function restartGame() {
+            currentQuestionIndex = 0;
+            correctAnswers = 0;
+            setupQuestions();
+            updateDisplay();
+            generateCoins();
+            updateTotalDisplay();
+        }
+
+        function setupButtons() {
+            const checkBtn = document.getElementById('check-btn');
+            const resetBtn = document.getElementById('reset-btn');
+
+            checkBtn.addEventListener('click', () => {
+                initAudio();
+                if (totalPlacedAmount === currentProduct.price) {
+                    correctAnswers++;
+                    const randomSuccessMsg = config.success_messages[Math.floor(Math.random() * config.success_messages.length)];
+                    
+                    // アドバイスメッセージの算出
+                    const coinAdvice = checkCoinCombinations();
+                    const fullMessage = randomSuccessMsg + coinAdvice;
+                    
+                    // 正解時のモーダルを表示
+                    showMessage(fullMessage, true, false);
+                } else {
+                    let failMsg = config.try_again_message;
+                    if (hintMode) {
+                        if (totalPlacedAmount > currentProduct.price) {
+                            failMsg += "\n(少しお金が多すぎるみたいだよ！)";
+                        } else {
+                            failMsg += "\n(お金が少し足りないみたいだよ！)";
+                        }
+                    }
+                    showMessage(failMsg, false);
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                initAudio();
+                // 支払いトレイの中のすべてのコインをお財布に戻す
+                const coins = document.getElementById('payment-area').querySelectorAll('.coin');
+                coins.forEach(coin => {
+                    const value = coin.getAttribute('data-value');
+                    const originalStack = document.getElementById('stack-' + value);
+                    if (originalStack) {
+                        coin.classList.remove('coin-placed');
+                        originalStack.appendChild(coin);
+                    } else {
+                        coin.remove();
+                    }
+                });
+                
+                playSound('coin');
+                updateTotalDisplay();
+            });
+        }
+
+        function setupCourseAndHintSelector() {
+            const courseSelect = document.getElementById('course-select');
+            const hintSelect = document.getElementById('hint-select');
+
+            courseSelect.addEventListener('change', (e) => {
+                initAudio();
+                currentCourse = e.target.value;
+                setupQuestions();
+                updateDisplay();
+                generateCoins();
+                updateTotalDisplay();
+            });
+
+            hintSelect.addEventListener('change', (e) => {
+                initAudio();
+                hintMode = e.target.value === 'hint-on';
+                updateTotalDisplay();
+            });
+        }
+
+        // アプリケーション初期化
+        function initApp() {
+            setupQuestions();
+            updateDisplay();
+            generateCoins();
+            setupDragAndDrop();
+            setupButtons();
+            setupCourseAndHintSelector();
+        }
+
+        window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+ </body>
+</html>
